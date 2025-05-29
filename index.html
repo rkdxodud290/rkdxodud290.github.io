@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mine Tycoon - Upgraded</title>
+    <title>Mine Tycoon - Market Selling</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script type="module">
@@ -49,10 +49,14 @@
                             if (user) {
                                 userId = user.uid;
                                 console.log("User is signed in with UID:", userId);
+                                const userIdDisplaySettings = document.getElementById('user-id-display-settings');
+                                if (userIdDisplaySettings) userIdDisplaySettings.textContent = userId;
                                 isAuthReady = true;
                                 await this.loadGame(); 
                             } else {
                                 console.log("User is not signed in. Attempting sign-in.");
+                                const userIdDisplaySettings = document.getElementById('user-id-display-settings');
+                                if (userIdDisplaySettings) userIdDisplaySettings.textContent = 'N/A (Not Signed In)';
                                 try {
                                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                                         await signInWithCustomToken(auth, __initial_auth_token);
@@ -70,6 +74,8 @@
                         });
                     } else {
                         console.warn("Firebase config is empty. Game will run in offline mode without saving.");
+                        const userIdDisplaySettings = document.getElementById('user-id-display-settings');
+                        if (userIdDisplaySettings) userIdDisplaySettings.textContent = 'N/A (Offline Mode)';
                         isAuthReady = true; 
                         this.resetState(); 
                         this.calculateOfflineProgression(Date.now()); 
@@ -78,6 +84,8 @@
                     }
                 } catch (error) {
                     console.error("Firebase initialization failed:", error);
+                    const userIdDisplaySettings = document.getElementById('user-id-display-settings');
+                    if (userIdDisplaySettings) userIdDisplaySettings.textContent = 'N/A (Error)';
                     isAuthReady = true; 
                     this.resetState(); 
                     this.calculateOfflineProgression(Date.now()); 
@@ -99,12 +107,18 @@
                     mine_10m_stone: { name: "Stone Tycoon", description: "Mine 10,000,000 Stone.", category: "Mining", condition: () => this.state.resources.stone.count >= 10000000 },
                     mine_10k_coal: { name: "Coal Collector", description: "Mine 10,000 Coal.", category: "Mining", condition: () => this.state.resources.coal.count >= 10000 },
                     mine_1k_iron: { name: "Iron Baron", description: "Mine 1,000 Iron.", category: "Mining", condition: () => this.state.resources.iron.count >= 1000 },
+                    mine_5k_copper: { name: "Copper Collector", description: "Mine 5,000 Copper.", category: "Mining", condition: () => this.state.resources.copper.count >= 5000 },
+                    mine_1k_quartz: { name: "Quartz Quarryman", description: "Mine 1,000 Quartz.", category: "Mining", condition: () => this.state.resources.quartz?.count >= 1000 },
                     mine_100_gold: { name: "Gold Hoarder", description: "Mine 100 Gold.", category: "Mining", condition: () => this.state.resources.gold.count >= 100 },
                     mine_10_diamond: { name: "Diamond King", description: "Mine 10 Diamond.", category: "Mining", condition: () => this.state.resources.diamond.count >= 10 },
+                    mine_10_platinum: { name: "Platinum Prospector", description: "Mine 10 Platinum.", category: "Mining", condition: () => this.state.resources.platinum.count >= 10 },
+                    mine_10_emerald: { name: "Emerald Enthusiast", description: "Mine 10 Emeralds.", category: "Mining", condition: () => this.state.resources.emerald.count >= 10 },
+                    mine_10_ruby: { name: "Ruby Rover", description: "Mine 10 Rubies.", category: "Mining", condition: () => this.state.resources.ruby.count >= 10 },
+                    mine_10_sapphire: { name: "Sapphire Seeker", description: "Mine 10 Sapphires.", category: "Mining", condition: () => this.state.resources.sapphire.count >= 10 },
+                    mine_10_amethyst: { name: "Amethyst Hunter", description: "Mine 10 Amethysts.", category: "Mining", condition: () => this.state.resources.amethyst.count >= 10 },
                     mine_obsidian_master: { name: "Obsidian Carver", description: "Mine 1,000 Obsidian.", category: "Mining", condition: () => this.state.resources.obsidian.count >= 1000 },
                     mine_mythril_adept: { name: "Mythril Adept", description: "Mine 500 Mythril.", category: "Mining", condition: () => this.state.resources.mythril?.count >= 500 },
                     mine_orichalcum_lord: { name: "Orichalcum Lord", description: "Mine 100 Orichalcum.", category: "Mining", condition: () => this.state.resources.orichalcum?.count >= 100 },
-
 
                     // Wealth Milestones
                     wealth_1k: { name: "Pocket Change", description: "Earn $1,000 total.", category: "Wealth", condition: () => this.state.money >= 1000 },
@@ -113,13 +127,18 @@
                     wealth_1b: { name: "Billionaire", description: "Earn $1,000,000,000 total.", category: "Wealth", condition: () => this.state.money >= 1000000000 },
                     wealth_1t: { name: "Trillionaire", description: "Earn $1,000,000,000,000 total.", category: "Wealth", condition: () => this.state.money >= 1000000000000 },
 
-
                     // Progression Milestones
                     unlock_coal: { name: "Getting Started", description: "Unlock Coal.", category: "Progression", condition: () => this.state.resources.coal.unlocked },
                     unlock_iron: { name: "Industrialist", description: "Unlock Iron.", category: "Progression", condition: () => this.state.resources.iron.unlocked },
+                    unlock_copper: { name: "Copper Age", description: "Unlock Copper.", category: "Progression", condition: () => this.state.resources.copper.unlocked },
+                    unlock_quartz: { name: "Crystal Clear", description: "Unlock Quartz.", category: "Progression", condition: () => this.state.resources.quartz?.unlocked },
                     unlock_gold: { name: "Prospector", description: "Unlock Gold.", category: "Progression", condition: () => this.state.resources.gold.unlocked },
                     unlock_diamond: { name: "Gemologist", description: "Unlock Diamond.", category: "Progression", condition: () => this.state.resources.diamond.unlocked },
                     unlock_platinum: { name: "Platinum Club", description: "Unlock Platinum.", category: "Progression", condition: () => this.state.resources.platinum.unlocked },
+                    unlock_emerald: { name: "Emerald Expert", description: "Unlock Emeralds.", category: "Progression", condition: () => this.state.resources.emerald.unlocked },
+                    unlock_ruby: { name: "Ruby Royalty", description: "Unlock Rubies.", category: "Progression", condition: () => this.state.resources.ruby.unlocked },
+                    unlock_sapphire: { name: "Sapphire Sovereign", description: "Unlock Sapphires.", category: "Progression", condition: () => this.state.resources.sapphire.unlocked },
+                    unlock_amethyst: { name: "Amethyst Aristocrat", description: "Unlock Amethysts.", category: "Progression", condition: () => this.state.resources.amethyst.unlocked },
                     unlock_obsidian: { name: "Master of Mines", description: "Unlock Obsidian.", category: "Progression", condition: () => this.state.resources.obsidian.unlocked },
                     unlock_mythril: { name: "Mythical Miner", description: "Unlock Mythril.", category: "Progression", condition: () => this.state.resources.mythril?.unlocked },
                     unlock_orichalcum: { name: "Legendary Extractor", description: "Unlock Orichalcum.", category: "Progression", condition: () => this.state.resources.orichalcum?.unlocked },
@@ -133,6 +152,32 @@
                     // Investment Achievements
                     first_investment: { name: "Market Dabbler", description: "Make your first investment.", category: "Investments", condition: () => Object.values(this.state.investments.portfolio).some(asset => asset.shares > 0) },
                     investment_profit_1k: { name: "Smart Investor", description: "Make $1,000 profit from investments.", category: "Investments", condition: () => (this.state.investments.totalSoldValue - this.state.investments.totalBoughtValue) >= 1000 },
+
+                    // Processing Achievements
+                    process_first_ingot: { name: "First Ingot", description: "Process your first Iron Ingot.", category: "Processing", condition: () => this.state.resources.iron_ingot?.count >= 1 && this.state.resources.iron_ingot?.unlocked, outputResourceId: 'iron_ingot' },
+                    process_100_ingots: { name: "Skilled Smelter", description: "Process 100 Iron Ingots.", category: "Processing", condition: () => this.state.resources.iron_ingot?.count >= 100, outputResourceId: 'iron_ingot' },
+                    process_first_copper_ingot: { name: "Copper Chaser", description: "Process your first Copper Ingot.", category: "Processing", condition: () => this.state.resources.copper_ingot?.count >= 1 && this.state.resources.copper_ingot?.unlocked, outputResourceId: 'copper_ingot' },
+                    process_first_gold_bar: { name: "Gold Standard", description: "Process your first Gold Bar.", category: "Processing", condition: () => this.state.resources.gold_bar?.count >= 1 && this.state.resources.gold_bar?.unlocked, outputResourceId: 'gold_bar' },
+                    process_first_silicon: { name: "Silicon Valley Start", description: "Process your first Silicon Wafer.", category: "Processing", condition: () => this.state.resources.silicon?.count >= 1 && this.state.resources.silicon?.unlocked, outputResourceId: 'silicon' },
+                    process_first_steel: { name: "Steel Foundation", description: "Process your first Steel Plate.", category: "Processing", condition: () => this.state.resources.steel_plate?.count >= 1 && this.state.resources.steel_plate?.unlocked, outputResourceId: 'steel_plate' },
+                    process_first_circuit: { name: "Circuit Board Genius", description: "Process your first Advanced Circuit.", category: "Processing", condition: () => this.state.resources.advanced_circuit?.count >= 1 && this.state.resources.advanced_circuit?.unlocked, outputResourceId: 'advanced_circuit' },
+                    
+                    first_polish: { name: "First Polish", description: "Polish your first gem.", category: "Processing", condition: () => Object.keys(this.state.processors).some(procId => procId.includes('_polisher') && this.state.resources[this.state.processors[procId].outputResourceId]?.count >= 1) },
+                    polish_10_diamond: { name: "Diamond Cutter", description: "Produce 10 Polished Diamonds.", category: "Processing", condition: () => this.state.resources.polished_diamond?.count >= 10, outputResourceId: 'polished_diamond' },
+                    polish_10_platinum: { name: "Platinum Shine", description: "Produce 10 Polished Platinum.", category: "Processing", condition: () => this.state.resources.polished_platinum?.count >= 10, outputResourceId: 'polished_platinum' },
+                    polish_10_emerald: { name: "Emerald Gleam", description: "Produce 10 Polished Emeralds.", category: "Processing", condition: () => this.state.resources.polished_emerald?.count >= 10, outputResourceId: 'polished_emerald' },
+                    polish_10_ruby: { name: "Ruby Radiance", description: "Produce 10 Polished Rubies.", category: "Processing", condition: () => this.state.resources.polished_ruby?.count >= 10, outputResourceId: 'polished_ruby' },
+                    polish_10_sapphire: { name: "Sapphire Sparkle", description: "Produce 10 Polished Sapphires.", category: "Processing", condition: () => this.state.resources.polished_sapphire?.count >= 10, outputResourceId: 'polished_sapphire' },
+                    polish_10_amethyst: { name: "Amethyst Aura", description: "Produce 10 Polished Amethysts.", category: "Processing", condition: () => this.state.resources.polished_amethyst?.count >= 10, outputResourceId: 'polished_amethyst' },
+                    
+                    unlock_all_processors: { name: "Industrial Revolution", description: "Unlock all available processors (excluding gem polishers).", category: "Processing", condition: () => Object.values(this.state.processors || {}).filter(p => !p.id.includes('_polisher')).every(p => p.unlocked) },
+                    master_jeweler: { name: "Master Jeweler", description: "Unlock all gem polishers.", category: "Processing", condition: () => Object.values(this.state.processors || {}).filter(p => p.id.includes('_polisher')).every(p => p.unlocked) },
+                    master_processor: { name: "Master Processor", description: "Upgrade any non-gem processor to Level 5 in either Speed or Efficiency.", category: "Processing", condition: () => Object.values(this.state.processors || {}).filter(p => !p.id.includes('_polisher')).some(p => p.speedLevel >= 5 || p.efficiencyLevel >= 5) },
+                    gem_polishing_expert: { name: "Gem Polishing Expert", description: "Upgrade any gem polisher to Level 5 in either Speed or Efficiency.", category: "Processing", condition: () => Object.values(this.state.processors || {}).filter(p => p.id.includes('_polisher')).some(p => p.speedLevel >= 5 || p.efficiencyLevel >= 5) },
+
+                    // Market Achievements
+                    market_tycoon: { name: "Market Tycoon", description: "Sell $1,000,000 worth of goods via the individual market.", category: "Market", condition: () => this.state.stats.totalSoldViaMarketValue >= 1000000 },
+                    strategic_seller: { name: "Strategic Seller", description: "Make 100 individual sales on the market.", category: "Market", condition: () => this.state.stats.individualMarketSalesCount >= 100 },
                 };
             },
 
@@ -153,6 +198,7 @@
                         coal: { id: 'coal', name: 'Coal', count: 0, value: 3, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50, miners: 0, minerCostBase: 150, minerProductionBase: 0.05, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 100, unlocked: false, unlockRequirements: { money: 100 } },
                         iron: { id: 'iron', name: 'Iron', count: 0, value: 10, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 200, miners: 0, minerCostBase: 750, minerProductionBase: 0.02, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 500, unlocked: false, unlockRequirements: { money: 1000, resources: { coal: 50 } } },
                         copper: { id: 'copper', name: 'Copper', count: 0, value: 25, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 500, miners: 0, minerCostBase: 2000, minerProductionBase: 0.01, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 1200, unlocked: false, unlockRequirements: { money: 5000, resources: { iron: 20 } } },
+                        quartz: { id: 'quartz', name: 'Quartz', count: 0, value: 15, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 300, miners: 0, minerCostBase: 1000, minerProductionBase: 0.015, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 800, unlocked: false, unlockRequirements: { money: 2500, resources: { stone: 500 }}},
                         gold: { id: 'gold', name: 'Gold', count: 0, value: 75, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1500, miners: 0, minerCostBase: 8000, minerProductionBase: 0.005, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 4000, unlocked: false, unlockRequirements: { money: 25000, resources: { copper: 100 } } },
                         diamond: { id: 'diamond', name: 'Diamond', count: 0, value: 250, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 10000, miners: 0, minerCostBase: 50000, minerProductionBase: 0.001, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 20000, unlocked: false, unlockRequirements: { money: 100000, resources: { gold: 50 } } },
                         platinum: { id: 'platinum', name: 'Platinum', count: 0, value: 750, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000, miners: 0, minerCostBase: 250000, minerProductionBase: 0.0005, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 100000, unlocked: false, unlockRequirements: { money: 500000, resources: { diamond: 100 } } },
@@ -163,6 +209,20 @@
                         obsidian: { id: 'obsidian', name: 'Obsidian', count: 0, value: 75000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000000, miners: 0, minerCostBase: 200000000, minerProductionBase: 0.00001, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 80000000, unlocked: false, unlockRequirements: { money: 1000000000, resources: { amethyst: 20 } } },
                         mythril: { id: 'mythril', name: 'Mythril', count: 0, value: 200000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 250000000, miners: 0, minerCostBase: 1000000000, minerProductionBase: 0.000005, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 400000000, unlocked: false, unlockRequirements: { money: 5000000000, resources: { obsidian: 100 } } },
                         orichalcum: { id: 'orichalcum', name: 'Orichalcum', count: 0, value: 1000000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1000000000, miners: 0, minerCostBase: 5000000000, minerProductionBase: 0.000001, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 2000000000, unlocked: false, unlockRequirements: { money: 25000000000, resources: { mythril: 50 } } },
+                        // Processed Resources
+                        iron_ingot: { id: 'iron_ingot', name: 'Iron Ingot', count: 0, value: 30, unlocked: false }, 
+                        copper_ingot: { id: 'copper_ingot', name: 'Copper Ingot', count: 0, value: 70, unlocked: false },
+                        gold_bar: { id: 'gold_bar', name: 'Gold Bar', count: 0, value: 200, unlocked: false },
+                        silicon: { id: 'silicon', name: 'Silicon Wafer', count: 0, value: 50, unlocked: false},
+                        steel_plate: { id: 'steel_plate', name: 'Steel Plate', count: 0, value: 150, unlocked: false},
+                        advanced_circuit: { id: 'advanced_circuit', name: 'Adv. Circuit', count: 0, value: 500, unlocked: false},
+                        // Polished Gems
+                        polished_diamond: { id: 'polished_diamond', name: 'Polished Diamond', count: 0, value: 650, unlocked: false }, 
+                        polished_platinum: { id: 'polished_platinum', name: 'Polished Platinum', count: 0, value: 1900, unlocked: false }, 
+                        polished_emerald: { id: 'polished_emerald', name: 'Polished Emerald', count: 0, value: 5000, unlocked: false }, 
+                        polished_ruby: { id: 'polished_ruby', name: 'Polished Ruby', count: 0, value: 12500, unlocked: false }, 
+                        polished_sapphire: { id: 'polished_sapphire', name: 'Polished Sapphire', count: 0, value: 30000, unlocked: false }, 
+                        polished_amethyst: { id: 'polished_amethyst', name: 'Polished Amethyst', count: 0, value: 75000, unlocked: false }, 
                     },
                     globalUpgrades: {
                         sellMultiplier: { level: 0, costBase: 1000, value: 1, increasePerLevel: 0.05, name: "Global Sell Multiplier", description: "Increases the sell price of all resources."},
@@ -179,6 +239,109 @@
                         totalBoughtValue: 0, 
                         totalSoldValue: 0,   
                         transactionFee: 0.005 
+                    },
+                    processors: {
+                        iron_smelter: {
+                            id: 'iron_smelter', name: 'Iron Smelter', 
+                            inputs: [{id: 'iron', amountBase: 10}],
+                            outputResourceId: 'iron_ingot', outputAmountBase: 1, processingTimeBase: 10, 
+                            costToProcessBase: 5, speedLevel: 0, efficiencyLevel: 0, 
+                            speedUpgradeCostBase: 500, efficiencyUpgradeCostBase: 750,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { iron: 100 }, money: 200 }
+                        },
+                        copper_smelter: {
+                            id: 'copper_smelter', name: 'Copper Smelter', 
+                            inputs: [{id: 'copper', amountBase: 8}],
+                            outputResourceId: 'copper_ingot', outputAmountBase: 1, processingTimeBase: 15,
+                            costToProcessBase: 15, speedLevel: 0, efficiencyLevel: 0,
+                            speedUpgradeCostBase: 1200, efficiencyUpgradeCostBase: 1800,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { copper: 100, coal: 50 }, money: 1000 }
+                        },
+                        gold_refinery: {
+                            id: 'gold_refinery', name: 'Gold Refinery', 
+                            inputs: [{id: 'gold', amountBase: 5}],
+                            outputResourceId: 'gold_bar', outputAmountBase: 1, processingTimeBase: 25,
+                            costToProcessBase: 50, speedLevel: 0, efficiencyLevel: 0,
+                            speedUpgradeCostBase: 4000, efficiencyUpgradeCostBase: 6000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { gold: 50, iron_ingot: 10 }, money: 5000 }
+                        },
+                        quartz_purifier: {
+                            id: 'quartz_purifier', name: 'Quartz Purifier',
+                            inputs: [{id: 'quartz', amountBase: 10}],
+                            outputResourceId: 'silicon', outputAmountBase: 1, processingTimeBase: 12,
+                            costToProcessBase: 20, speedLevel: 0, efficiencyLevel: 0,
+                            speedUpgradeCostBase: 1500, efficiencyUpgradeCostBase: 2200,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { quartz: 100, coal: 200 }, money: 3000 }
+                        },
+                        steel_mill: {
+                            id: 'steel_mill', name: 'Steel Mill',
+                            inputs: [{id: 'iron_ingot', amountBase: 5}, {id: 'coal', amountBase: 10}],
+                            outputResourceId: 'steel_plate', outputAmountBase: 1, processingTimeBase: 30,
+                            costToProcessBase: 100, speedLevel: 0, efficiencyLevel: 0,
+                            speedUpgradeCostBase: 8000, efficiencyUpgradeCostBase: 10000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { iron_ingot: 50, coal: 500 }, money: 15000 }
+                        },
+                        electronics_assembler: {
+                            id: 'electronics_assembler', name: 'Electronics Assembler',
+                            inputs: [{id: 'gold_bar', amountBase: 2}, {id: 'copper_ingot', amountBase: 5}, {id: 'silicon', amountBase: 3}],
+                            outputResourceId: 'advanced_circuit', outputAmountBase: 1, processingTimeBase: 60,
+                            costToProcessBase: 500, speedLevel: 0, efficiencyLevel: 0,
+                            speedUpgradeCostBase: 25000, efficiencyUpgradeCostBase: 35000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { gold_bar: 20, copper_ingot: 50, silicon: 30 }, money: 100000 }
+                        },
+                        // Gem Polishers
+                        diamond_polisher: {
+                            id: 'diamond_polisher', name: 'Diamond Polisher', inputs: [{id: 'diamond', amountBase: 1}],
+                            outputResourceId: 'polished_diamond', outputAmountBase: 1, processingTimeBase: 45, costToProcessBase: 125, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 100000, efficiencyUpgradeCostBase: 150000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { diamond: 20, steel_plate: 10 }, money: 200000 }
+                        },
+                        platinum_polisher: {
+                            id: 'platinum_polisher', name: 'Platinum Polisher', inputs: [{id: 'platinum', amountBase: 1}],
+                            outputResourceId: 'polished_platinum', outputAmountBase: 1, processingTimeBase: 50, costToProcessBase: 375, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 250000, efficiencyUpgradeCostBase: 350000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { platinum: 20, advanced_circuit: 5 }, money: 500000 }
+                        },
+                        emerald_polisher: {
+                            id: 'emerald_polisher', name: 'Emerald Polisher', inputs: [{id: 'emerald', amountBase: 1}],
+                            outputResourceId: 'polished_emerald', outputAmountBase: 1, processingTimeBase: 55, costToProcessBase: 1000, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 1000000, efficiencyUpgradeCostBase: 1500000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { emerald: 15, steel_plate: 20 }, money: 2000000 }
+                        },
+                         ruby_polisher: {
+                            id: 'ruby_polisher', name: 'Ruby Polisher', inputs: [{id: 'ruby', amountBase: 1}],
+                            outputResourceId: 'polished_ruby', outputAmountBase: 1, processingTimeBase: 60, costToProcessBase: 2500, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 4000000, efficiencyUpgradeCostBase: 6000000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { ruby: 15, advanced_circuit: 10 }, money: 8000000 }
+                        },
+                        sapphire_polisher: {
+                            id: 'sapphire_polisher', name: 'Sapphire Polisher', inputs: [{id: 'sapphire', amountBase: 1}],
+                            outputResourceId: 'polished_sapphire', outputAmountBase: 1, processingTimeBase: 65, costToProcessBase: 6000, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 15000000, efficiencyUpgradeCostBase: 20000000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { sapphire: 10, steel_plate: 30 }, money: 30000000 }
+                        },
+                        amethyst_polisher: {
+                            id: 'amethyst_polisher', name: 'Amethyst Polisher', inputs: [{id: 'amethyst', amountBase: 1}],
+                            outputResourceId: 'polished_amethyst', outputAmountBase: 1, processingTimeBase: 70, costToProcessBase: 15000, 
+                            speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 50000000, efficiencyUpgradeCostBase: 70000000,
+                            isActive: false, currentProgress: 0, unlocked: false,
+                            unlockRequirements: { resources: { amethyst: 10, advanced_circuit: 20 }, money: 100000000 }
+                        },
+                    },
+                    stats: { // For market achievements
+                        totalSoldViaMarketValue: 0,
+                        individualMarketSalesCount: 0,
                     },
                     lastUpdate: Date.now(),
                     lastSave: null,
@@ -198,7 +361,7 @@
                 return JSON.parse(JSON.stringify(baseState)); 
             },
             
-            resetState() { // This function is kept in case it's needed elsewhere, but no UI calls it now.
+            resetState() { 
                 this.state = this.getDefaultState();
                 this.state.lastUpdate = Date.now();
                 console.log("Game state reset to default.");
@@ -219,28 +382,65 @@
                     return;
                 }
 
-                let totalOfflineEarnings = 0;
-                let offlineSummary = "Welcome back! While you were away:<br>"; // Using <br> for toast
+                let offlineSummary = "Welcome back! While you were away:<br>"; 
                 let anyProduction = false;
 
                 for (const resKey in this.state.resources) {
                     const resource = this.state.resources[resKey];
-                    if (resource.unlocked && resource.miners > 0) {
+                    if (resource.unlocked && resource.miners > 0 && resource.minerProductionBase) {
                         const productionPerSecond = resource.miners * this.getMinerProduction(resource);
                         const offlineGain = productionPerSecond * offlineTimeSeconds;
                         if (offlineGain > 0) {
                             resource.count += offlineGain;
-                            totalOfflineEarnings += offlineGain * resource.value * this.state.globalUpgrades.sellMultiplier.value; 
-                            offlineSummary += `+ ${this.formatNumber(offlineGain)} ${resource.name}<br>`;
+                            offlineSummary += `+ ${this.formatNumber(offlineGain)} ${resource.name} (mined)<br>`;
                             anyProduction = true;
                         }
+                    }
+                }
+
+                for (const procId in this.state.processors) {
+                    const processor = this.state.processors[procId];
+                    if (processor.unlocked && processor.isActive) { 
+                        const actualProcessingTime = this.getActualProcessingTime(processor);
+                        const batchesPossible = Math.floor(offlineTimeSeconds / actualProcessingTime);
+                        const actualInputAmounts = this.getActualInputAmounts(processor); 
+                        const actualOutputAmount = processor.outputAmountBase;
+
+                        let batchesCompleted = 0;
+                        for (let i = 0; i < batchesPossible; i++) {
+                            let canProcessBatch = true;
+                            for (const input of actualInputAmounts) {
+                                if (this.state.resources[input.id].count < input.amount) {
+                                    canProcessBatch = false;
+                                    break;
+                                }
+                            }
+
+                            if (canProcessBatch) {
+                                for (const input of actualInputAmounts) {
+                                    this.state.resources[input.id].count -= input.amount;
+                                }
+                                this.state.resources[processor.outputResourceId].count += actualOutputAmount;
+                                if (!this.state.resources[processor.outputResourceId].unlocked) {
+                                    this.state.resources[processor.outputResourceId].unlocked = true;
+                                }
+                                batchesCompleted++;
+                            } else {
+                                break; 
+                            }
+                        }
+                        if (batchesCompleted > 0) {
+                             offlineSummary += `+ ${this.formatNumber(batchesCompleted * actualOutputAmount)} ${this.state.resources[processor.outputResourceId].name} (processed)<br>`;
+                             anyProduction = true;
+                        }
+                        processor.isActive = false; 
+                        processor.currentProgress = 0;
                     }
                 }
                 
                 this.state.lastUpdate = now; 
 
                 if (anyProduction) {
-                    offlineSummary += `Estimated offline value: $${this.formatNumber(totalOfflineEarnings, 2)}`;
                     this.showToast(offlineSummary, false, 10000); 
                     console.log("Offline progression calculated:", offlineSummary.replace(/<br>/g, '\n'));
                 } else {
@@ -270,14 +470,20 @@
                             this.state = { ...defaultState }; 
 
                             for (const key in defaultState) {
-                                if (loadedData.hasOwnProperty(key) && typeof loadedData[key] !== 'object' && 
-                                    key !== 'achievements' && key !== 'investments' && key !== 'resources' && key !== 'globalUpgrades') { 
+                                if (loadedData.hasOwnProperty(key) && 
+                                    typeof loadedData[key] !== 'object' && 
+                                    key !== 'achievements' && 
+                                    key !== 'investments' && 
+                                    key !== 'resources' && 
+                                    key !== 'globalUpgrades' &&
+                                    key !== 'processors' &&
+                                    key !== 'stats' ) { 
                                     this.state[key] = loadedData[key];
                                 }
                             }
                             this.state.money = loadedData.money !== undefined ? loadedData.money : defaultState.money;
 
-                            this.state.resources = {};
+                            this.state.resources = {}; 
                             for (const resKey in defaultState.resources) {
                                 this.state.resources[resKey] = { 
                                     ...defaultState.resources[resKey], 
@@ -318,11 +524,26 @@
                                     };
                                 });
                             }
+                            this.state.processors = {};
+                            for (const procKey in defaultState.processors) {
+                                this.state.processors[procKey] = {
+                                    ...defaultState.processors[procKey],
+                                    ...(loadedData.processors ? loadedData.processors[procKey] : {})
+                                };
+                                if (loadedData.processors && loadedData.processors[procKey]) {
+                                     this.state.processors[procKey].isActive = loadedData.processors[procKey].isActive || false;
+                                     this.state.processors[procKey].currentProgress = loadedData.processors[procKey].currentProgress || 0;
+                                } else {
+                                     this.state.processors[procKey].isActive = false;
+                                     this.state.processors[procKey].currentProgress = 0;
+                                }
+                            }
+                            this.state.stats = { ...defaultState.stats, ...(loadedData.stats || {}) };
+
 
                             lastKnownUpdateTime = loadedData.lastUpdate || defaultState.lastUpdate; 
                             this.state.lastSave = loadedData.lastSave || null;
-                            // Ensure currentTab is valid, default to 'mines' if not or if settings tab was saved previously
-                            this.state.currentTab = (loadedData.currentTab && loadedData.currentTab !== 'settings') ? loadedData.currentTab : defaultState.currentTab;
+                            this.state.currentTab = loadedData.currentTab || defaultState.currentTab; 
                             
                             console.log("Game loaded and merged from Firestore:", JSON.parse(JSON.stringify(this.state)));
                         } else {
@@ -481,13 +702,19 @@
                         const achievement = this.achievementsList[achId];
                         try {
                             let conditionMet = false;
-                            if (achId.startsWith("mine_mythril") && !this.state.resources.mythril) {
-                                conditionMet = false;
-                            } else if (achId.startsWith("mine_orichalcum") && !this.state.resources.orichalcum) {
-                                conditionMet = false;
-                            } else if (achId.startsWith("unlock_mythril") && !this.state.resources.mythril) {
-                                conditionMet = false;
-                            } else if (achId.startsWith("unlock_orichalcum") && !this.state.resources.orichalcum) {
+                            if (achId.includes("process_") || achId.includes("processor") || achId.includes("polish_") || achId.includes("jeweler") || achId.includes("polishing_expert")) {
+                                const outputResId = achievement.outputResourceId; 
+                                if (!this.state.processors || (outputResId && !this.state.resources[outputResId]) ) {
+                                    conditionMet = false;
+                                } else {
+                                     conditionMet = achievement.condition();
+                                }
+                            } else if ( (achId.startsWith("mine_mythril") && !this.state.resources.mythril) ||
+                                (achId.startsWith("mine_orichalcum") && !this.state.resources.orichalcum) ||
+                                (achId.startsWith("unlock_mythril") && !this.state.resources.mythril) ||
+                                (achId.startsWith("unlock_orichalcum") && !this.state.resources.orichalcum) ||
+                                (achId.startsWith("mine_quartz") && !this.state.resources.quartz) ||
+                                (achId.startsWith("unlock_quartz") && !this.state.resources.quartz) ) {
                                 conditionMet = false;
                             } else {
                                 conditionMet = achievement.condition();
@@ -521,11 +748,33 @@
 
                 for (const resKey in this.state.resources) {
                     const resource = this.state.resources[resKey];
-                    if (resource.unlocked && resource.miners > 0) {
+                    if (resource.unlocked && resource.miners > 0 && resource.minerProductionBase) { 
                         const productionPerSecond = resource.miners * this.getMinerProduction(resource);
                         resource.count += productionPerSecond * deltaTime;
                     }
                 }
+
+                if (this.state.processors) {
+                    for (const procId in this.state.processors) {
+                        const processor = this.state.processors[procId];
+                        if (processor.unlocked && processor.isActive) {
+                            processor.currentProgress += deltaTime;
+                            const actualProcessingTime = this.getActualProcessingTime(processor);
+                            if (processor.currentProgress >= actualProcessingTime) {
+                                this.state.resources[processor.outputResourceId].count += processor.outputAmountBase;
+                                if (!this.state.resources[processor.outputResourceId].unlocked) {
+                                    this.state.resources[processor.outputResourceId].unlocked = true;
+                                    this.showToast(`${this.state.resources[processor.outputResourceId].name} now available!`);
+                                }
+                                this.showToast(`Processed 1 batch of ${this.state.resources[processor.outputResourceId].name}!`);
+                                processor.isActive = false;
+                                processor.currentProgress = 0;
+                                this.checkAllAchievements(); 
+                            }
+                        }
+                    }
+                }
+
                 this.state.lastUpdate = now; 
                 this.checkAllAchievements(); 
                 this.render(); 
@@ -533,14 +782,14 @@
 
             manualMine(resourceId) {
                 const resource = this.state.resources[resourceId];
-                if (resource && resource.unlocked) {
+                if (resource && resource.unlocked && resource.manualMineBaseAmount) { 
                     resource.count += this.getManualMineAmount(resource);
                     this.checkAllAchievements(); 
                     this.render();
                 }
             },
 
-            sellAllResources() {
+            sellAllResources() { // This is the general "Sell All" from header
                 let totalEarnings = 0;
                 for (const resKey in this.state.resources) {
                     const resource = this.state.resources[resKey];
@@ -556,21 +805,54 @@
                 this.render();
                 this.saveGame(true); 
             },
+            
+            sellResource(resourceId, quantity) {
+                const numQuantity = parseInt(quantity);
+                if (isNaN(numQuantity) || numQuantity <= 0) {
+                    this.showToast("Invalid quantity.", true);
+                    return;
+                }
+
+                const resource = this.state.resources[resourceId];
+                if (!resource || !resource.unlocked) {
+                    this.showToast("Resource not available to sell.", true);
+                    return;
+                }
+                if (resource.count < numQuantity) {
+                    this.showToast(`Not enough ${resource.name} to sell.`, true);
+                    return;
+                }
+
+                const valuePerUnit = resource.value * this.state.globalUpgrades.sellMultiplier.value;
+                const earnings = numQuantity * valuePerUnit;
+
+                resource.count -= numQuantity;
+                this.state.money += earnings;
+                this.state.stats.totalSoldViaMarketValue += earnings;
+                this.state.stats.individualMarketSalesCount++;
+
+
+                this.showToast(`Sold ${this.formatNumber(numQuantity)} ${resource.name} for $${this.formatNumber(earnings, 2)}!`);
+                this.checkAllAchievements();
+                this.render();
+                this.saveGame(true);
+            },
+
 
             getManualMineAmount(resource) {
-                if (!resource) return 0;
+                if (!resource || !resource.manualMineBaseAmount) return 0;
                 const geologistBoost = this.state.globalUpgrades.masterGeologist.value;
                 const manualBoost = this.state.globalUpgrades.manualMiningBoost.value;
                 return resource.manualMineBaseAmount * (1 + resource.manualMineLevel * 0.25) * manualBoost * geologistBoost;
             },
             getManualMineUpgradeCost(resource) {
-                if (!resource) return Infinity;
+                if (!resource || !resource.manualMineUpgradeCostBase) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4); 
                 return Math.floor(resource.manualMineUpgradeCostBase * Math.pow(1.25, resource.manualMineLevel) * efficiencyMultiplier);
             },
             buyManualMineUpgrade(resourceId) {
                 const resource = this.state.resources[resourceId];
-                if (!resource) { this.showToast("Resource not found!", true); return; }
+                if (!resource || !resource.manualMineUpgradeCostBase) { this.showToast("Cannot upgrade this item.", true); return; }
                 const cost = this.getManualMineUpgradeCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
@@ -585,13 +867,13 @@
             },
 
             getMinerCost(resource) {
-                if (!resource) return Infinity;
+                if (!resource || !resource.minerCostBase) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4);
                 return Math.floor(resource.minerCostBase * Math.pow(1.15, resource.miners) * efficiencyMultiplier);
             },
             buyMiner(resourceId) {
                 const resource = this.state.resources[resourceId];
-                if (!resource) { this.showToast("Resource not found!", true); return; }
+                if (!resource || !resource.minerCostBase) { this.showToast("Cannot buy miners for this item.", true); return; }
                 const cost = this.getMinerCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
@@ -606,17 +888,17 @@
             },
 
             getMinerProduction(resource) {
-                if (!resource) return 0;
+                if (!resource || !resource.minerProductionBase) return 0; 
                 return resource.minerProductionBase * (1 + resource.minerSpeedLevel * 0.15) * this.state.globalUpgrades.minerSpeedBoost.value;
             },
             getMinerSpeedUpgradeCost(resource) {
-                if (!resource) return Infinity;
+                if (!resource || !resource.minerSpeedUpgradeCostBase) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4);
                 return Math.floor(resource.minerSpeedUpgradeCostBase * Math.pow(1.3, resource.minerSpeedLevel) * efficiencyMultiplier);
             },
             buyMinerSpeedUpgrade(resourceId) {
                 const resource = this.state.resources[resourceId];
-                 if (!resource) { this.showToast("Resource not found!", true); return; }
+                 if (!resource || !resource.minerSpeedUpgradeCostBase) { this.showToast("Cannot upgrade miner speed for this item.", true); return; }
                 const cost = this.getMinerSpeedUpgradeCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
@@ -661,9 +943,9 @@
                 }
             },
 
-            getUnlockRequirements(resource) {
-                if (!resource || !resource.unlockRequirements) return null;
-                const req = JSON.parse(JSON.stringify(resource.unlockRequirements)); 
+            getUnlockRequirements(item) { 
+                if (!item || !item.unlockRequirements) return null;
+                const req = JSON.parse(JSON.stringify(item.unlockRequirements)); 
                 const researchBonusMultiplier = 1 - Math.min(this.state.globalUpgrades.researchAndDevelopment.level * this.state.globalUpgrades.researchAndDevelopment.increasePerLevel, 0.5);
 
                 if (req.money) {
@@ -679,10 +961,10 @@
                 return req;
             },
 
-            checkUnlockConditions(resource) {
-                if (!resource) return false; 
-                const actualRequirements = this.getUnlockRequirements(resource);
-                if (!resource.unlocked && actualRequirements) {
+            checkUnlockConditions(item) { 
+                if (!item) return false; 
+                const actualRequirements = this.getUnlockRequirements(item);
+                if (!item.unlocked && actualRequirements) {
                     let canUnlock = true;
                     if (actualRequirements.money && this.state.money < actualRequirements.money) canUnlock = false;
                     if (actualRequirements.resources) {
@@ -698,31 +980,111 @@
                 return false; 
             },
 
-            unlockResource(resourceId) {
-                const resource = this.state.resources[resourceId];
-                if (!resource) { this.showToast("Resource to unlock not found!", true); return; }
+            unlockItem(itemId, itemType = 'resource') { 
+                const item = itemType === 'processor' ? this.state.processors[itemId] : this.state.resources[itemId];
+                if (!item) { this.showToast(`${itemType === 'processor' ? 'Processor' : 'Resource'} to unlock not found!`, true); return; }
 
-                const actualRequirements = this.getUnlockRequirements(resource);
+                const actualRequirements = this.getUnlockRequirements(item);
 
-                if (resource && !resource.unlocked && actualRequirements && this.checkUnlockConditions(resource)) { 
+                if (item && !item.unlocked && actualRequirements && this.checkUnlockConditions(item)) { 
                     if (actualRequirements.money) this.state.money -= actualRequirements.money;
                     if (actualRequirements.resources) {
                         for (const resKey in actualRequirements.resources) {
                            if (this.state.resources[resKey]) this.state.resources[resKey].count -= actualRequirements.resources[resKey];
                         }
                     }
-                    resource.unlocked = true;
-                    this.showToast(`${resource.name} unlocked!`);
+                    item.unlocked = true;
+                    this.showToast(`${item.name} unlocked!`);
                     this.checkAllAchievements();
                     this.render();
                     this.saveGame(true);
                 } else {
-                    this.showToast("Cannot meet unlock requirements or resource already unlocked!", true);
+                    this.showToast(`Cannot meet unlock requirements or ${itemType} already unlocked!`, true);
                 }
+            },
+
+            getActualProcessingTime(processor) {
+                if (!processor) return Infinity;
+                return Math.max(1, processor.processingTimeBase * (1 - (processor.speedLevel * 0.05))); 
+            },
+            getActualInputAmounts(processor) { 
+                if (!processor || !processor.inputs) return [];
+                return processor.inputs.map(input => ({
+                    id: input.id,
+                    amount: Math.max(1, Math.ceil(input.amountBase * (1 - (processor.efficiencyLevel * 0.03))))
+                }));
+            },
+            getActualCostToProcess(processor) {
+                if (!processor) return Infinity;
+                return Math.max(0, Math.ceil(processor.costToProcessBase * (1 - (processor.efficiencyLevel * 0.02)))); 
+            },
+            getProcessorUpgradeCost(processor, type) { 
+                if (!processor) return Infinity;
+                const level = type === 'speed' ? processor.speedLevel : processor.efficiencyLevel;
+                const baseCost = type === 'speed' ? processor.speedUpgradeCostBase : processor.efficiencyUpgradeCostBase;
+                return Math.floor(baseCost * Math.pow(1.4, level)); 
+            },
+            buyProcessorUpgrade(processorId, type) {
+                const processor = this.state.processors[processorId];
+                if (!processor) { this.showToast("Processor not found!", true); return; }
+                const cost = this.getProcessorUpgradeCost(processor, type);
+                if (this.state.money >= cost) {
+                    this.state.money -= cost;
+                    if (type === 'speed') {
+                        processor.speedLevel++;
+                        this.showToast(`${processor.name} Speed Lvl ${processor.speedLevel}!`);
+                    } else if (type === 'efficiency') {
+                        processor.efficiencyLevel++;
+                        this.showToast(`${processor.name} Efficiency Lvl ${processor.efficiencyLevel}!`);
+                    }
+                    this.checkAllAchievements();
+                    this.render();
+                    this.saveGame(true);
+                } else {
+                    this.showToast("Not enough money for upgrade!", true);
+                }
+            },
+            startProcessing(processorId) {
+                const processor = this.state.processors[processorId];
+                if (!processor || !processor.unlocked) { this.showToast("Processor not available!", true); return; }
+                if (processor.isActive) { this.showToast(`${processor.name} is busy!`, true); return; }
+
+                const actualInputAmounts = this.getActualInputAmounts(processor);
+                const cost = this.getActualCostToProcess(processor);
+                let canAffordAllInputs = true;
+                let missingResourcesMessage = "Not enough: ";
+
+                for (const input of actualInputAmounts) {
+                    if (!this.state.resources[input.id] || this.state.resources[input.id].count < input.amount) {
+                        canAffordAllInputs = false;
+                        missingResourcesMessage += `${input.amount} ${this.state.resources[input.id]?.name || input.id}, `;
+                    }
+                }
+                missingResourcesMessage = missingResourcesMessage.slice(0, -2); 
+
+                if (!canAffordAllInputs) {
+                    this.showToast(missingResourcesMessage, true);
+                    return;
+                }
+                if (this.state.money < cost) {
+                    this.showToast(`Not enough money for ${processor.name}! (Need $${this.formatNumber(cost)})`, true);
+                    return;
+                }
+
+                for (const input of actualInputAmounts) {
+                    this.state.resources[input.id].count -= input.amount;
+                }
+                this.state.money -= cost;
+
+                processor.isActive = true;
+                processor.currentProgress = 0;
+                this.showToast(`Started processing 1 batch in ${processor.name}.`);
+                this.render();
+                this.saveGame(false); 
             },
             
             render() {
-                if (!document.body || !document.getElementById('money-display') || !this.state || !this.state.resources || !this.state.globalUpgrades || !this.state.achievements || !this.state.investments) {
+                if (!document.body || !document.getElementById('money-display') || !this.state || !this.state.resources || !this.state.globalUpgrades || !this.state.achievements || !this.state.investments || !this.state.processors || !this.state.stats) {
                     console.warn("Render called too early or critical elements/state missing. Deferring render.");
                     requestAnimationFrame(() => this.render());
                     return;
@@ -733,32 +1095,34 @@
                 const resourcesContainer = document.getElementById('resources-container');
                 if (resourcesContainer) {
                     resourcesContainer.innerHTML = ''; 
-                    Object.values(this.state.resources).forEach(res => {
+                    Object.values(this.state.resources).filter(res => res.manualMineBaseAmount || res.unlocked).forEach(res => { 
                         if (!res) return; 
                         const card = document.createElement('div');
                         card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col'; 
 
-                        if (!res.unlocked) {
+                        if (!res.unlocked && res.unlockRequirements) { 
                             if (this.checkUnlockConditions(res)) { 
                                 card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:bg-slate-600'); 
-                                card.innerHTML = this.createUnlockCardInnerHtml(res);
-                                card.querySelector('button[data-action="unlockResource"]')?.addEventListener('click', (e) => {
+                                card.innerHTML = this.createUnlockCardInnerHtml(res, 'resource');
+                                card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
                                     e.stopPropagation(); 
-                                    this.unlockResource(res.id);
+                                    this.unlockItem(res.id, 'resource');
                                 });
                             } else {
                                 card.classList.add('opacity-70', 'bg-slate-800'); 
-                                card.innerHTML = this.createLockedCardInnerHtml(res);
+                                card.innerHTML = this.createLockedCardInnerHtml(res, 'resource');
                             }
-                        } else { 
-                            let productionRate = res.miners > 0 ? res.miners * this.getMinerProduction(res) : 0;
+                        } else if (res.unlocked) { 
+                            let productionRate = (res.miners && res.miners > 0 && res.minerProductionBase) ? res.miners * this.getMinerProduction(res) : 0;
                             card.innerHTML = `
                                 <div class="flex-grow"> 
                                     <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${res.name}</h3>
                                     <p class="text-xl sm:text-2xl my-1 sm:my-2">${this.formatNumber(res.count)}</p>
                                     <p class="text-xs sm:text-sm text-slate-400">Value: $${this.formatNumber(res.value * this.state.globalUpgrades.sellMultiplier.value, 2)}/unit</p>
-                                    ${res.miners > 0 ? `<p class="text-xs sm:text-sm text-green-400">Prod: ${this.formatNumber(productionRate, 3)}/s</p>` : ''}
+                                    ${productionRate > 0 ? `<p class="text-xs sm:text-sm text-green-400">Prod: ${this.formatNumber(productionRate, 3)}/s</p>` : ''}
+                                    ${!res.manualMineBaseAmount && !res.minerProductionBase ? '<p class="text-xs text-sky-400 italic">Processed Item</p>' : ''}
                                 </div>
+                                ${res.manualMineBaseAmount ? ` 
                                 <div class="mt-auto"> 
                                     <button data-action="manualMine" data-resource="${res.id}" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Mine ${this.formatNumber(this.getManualMineAmount(res),1)}</button>
                                     <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-600">
@@ -770,7 +1134,10 @@
                                         <button data-action="buyMiner" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-purple-500 hover:bg-purple-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md mb-1 transform hover:scale-105 transition-transform">Buy Miner ($${this.formatNumber(this.getMinerCost(res))})</button>
                                         <button data-action="buyMinerSpeedUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-teal-500 hover:bg-teal-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md transform hover:scale-105 transition-transform">Upgrade Speed ($${this.formatNumber(this.getMinerSpeedUpgradeCost(res))})</button>
                                     </div>
-                                </div>`;
+                                </div>` : '' }`;
+                        } else {
+                             card.innerHTML = `<h3 class="text-lg sm:text-xl font-semibold text-slate-500">${res.name} (Unavailable)</h3>`;
+                             card.classList.add('opacity-50', 'bg-slate-800');
                         }
                         resourcesContainer.appendChild(card);
                     });
@@ -805,6 +1172,98 @@
                         globalUpgradesContainer.appendChild(card);
                     }
                 }
+                
+                const processorsContainer = document.getElementById('processors-container');
+                if (processorsContainer) {
+                    processorsContainer.innerHTML = '';
+                    for (const procId in this.state.processors) {
+                        const processor = this.state.processors[procId];
+                        const card = document.createElement('div');
+                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+
+                        if (!processor.unlocked) {
+                            if (this.checkUnlockConditions(processor)) {
+                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:bg-slate-600');
+                                card.innerHTML = this.createUnlockCardInnerHtml(processor, 'processor');
+                                 card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
+                                    e.stopPropagation(); 
+                                    this.unlockItem(processor.id, 'processor');
+                                });
+                            } else {
+                                card.classList.add('opacity-70', 'bg-slate-800');
+                                card.innerHTML = this.createLockedCardInnerHtml(processor, 'processor');
+                            }
+                        } else {
+                            const actualInputAmounts = this.getActualInputAmounts(processor); 
+                            const outputRes = this.state.resources[processor.outputResourceId];
+                            const actualProcessingTime = this.getActualProcessingTime(processor);
+                            const actualCostToProcess = this.getActualCostToProcess(processor);
+                            const progressPercent = processor.isActive ? (processor.currentProgress / actualProcessingTime) * 100 : 0;
+
+                            let inputsHtml = actualInputAmounts.map(input => {
+                                const inputResDef = this.state.resources[input.id];
+                                return `${this.formatNumber(input.amount)} ${inputResDef.name}`;
+                            }).join(' + ');
+
+                            card.innerHTML = `
+                                <div class="flex-grow">
+                                    <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${processor.name}</h3>
+                                    <p class="text-xs sm:text-sm text-slate-300">Converts: ${inputsHtml} &rarr; ${processor.outputAmountBase} ${outputRes.name}</p>
+                                    <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualProcessingTime, 1)}s | Cost: $${this.formatNumber(actualCostToProcess)}</p>
+                                    
+                                    ${processor.isActive ? `
+                                    <div class="w-full bg-slate-600 rounded-full h-2.5 my-2">
+                                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
+                                    </div>
+                                    <p class="text-xs text-center text-blue-300">Processing... (${this.formatNumber(Math.max(0, actualProcessingTime - processor.currentProgress), 1)}s left)</p>
+                                    ` : `
+                                    <button data-action="startProcessing" data-processorid="${procId}" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 rounded-md transform hover:scale-105 transition-transform text-sm ${processor.isActive ? 'opacity-50 cursor-not-allowed' : ''}" ${processor.isActive ? 'disabled' : ''}>
+                                        Process Batch
+                                    </button>
+                                    `}
+                                </div>
+                                <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600">
+                                    <p class="text-xs text-slate-300 mb-1">Speed Lvl: ${processor.speedLevel} | Efficiency Lvl: ${processor.efficiencyLevel}</p>
+                                    <div class="flex space-x-2">
+                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="speed" class="flex-1 text-xs bg-green-500 hover:bg-green-600 text-white py-1 px-1.5 rounded-md transform hover:scale-105 transition-transform">Speed ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'speed'))})</button>
+                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="efficiency" class="flex-1 text-xs bg-teal-500 hover:bg-teal-600 text-white py-1 px-1.5 rounded-md transform hover:scale-105 transition-transform">Efficiency ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'efficiency'))})</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        processorsContainer.appendChild(card);
+                    }
+                }
+
+                // Render Market Tab
+                const marketContainer = document.getElementById('market-container');
+                if (marketContainer) {
+                    marketContainer.innerHTML = '';
+                    Object.values(this.state.resources).filter(res => res.unlocked && res.value > 0).sort((a,b) => a.name.localeCompare(b.name)).forEach(res => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+                        const currentPrice = res.value * this.state.globalUpgrades.sellMultiplier.value;
+                        card.innerHTML = `
+                            <div class="flex-grow">
+                                <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${res.name}</h3>
+                                <p class="text-sm text-slate-300">In Stock: ${this.formatNumber(res.count)}</p>
+                                <p class="text-xs text-slate-400 mb-2">Sell Price: $${this.formatNumber(currentPrice, 2)}/unit</p>
+                                <input type="number" id="sell-amount-${res.id}" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-md p-2 w-full mb-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Qty to sell" min="1" max="${Math.floor(res.count)}">
+                            </div>
+                            <div class="mt-auto space-y-1">
+                                <div class="flex space-x-1">
+                                    ${res.count >= 1 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="1" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 1</button>` : ''}
+                                    ${res.count >= 10 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="10" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 10</button>` : ''}
+                                    ${res.count >= 100 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="100" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 100</button>` : ''}
+                                </div>
+                                <button data-action="sellResourceCustom" data-resourceid="${res.id}" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 rounded-md text-sm">Sell Custom</button>
+                                <button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="all" class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-medium py-1.5 px-2 rounded-md text-sm">Sell All (${this.formatNumber(res.count)})</button>
+                            </div>
+                        `;
+                        marketContainer.appendChild(card);
+                    });
+                }
+
 
                 const achievementsContainer = document.getElementById('achievements-container');
                 if (achievementsContainer) {
@@ -813,7 +1272,7 @@
                     Object.entries(this.achievementsList).forEach(([id, achDef]) => {
                         if (!achDef || !achDef.category) return; 
                         if (!categories[achDef.category]) categories[achDef.category] = [];
-                        categories[achDef.category].push({id, ...achDef});
+                        categories[achDef.category].push({id, ...achDef, outputResourceId: achDef.outputResourceId}); 
                     });
 
                     for (const categoryName in categories) {
@@ -915,7 +1374,10 @@
                 document.getElementById('upgrades-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'upgrades');
                 document.getElementById('investments-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'investments');
                 document.getElementById('achievements-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'achievements');
-                // Settings tab content div is removed, so no need to toggle it.
+                document.getElementById('process-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'process');
+                document.getElementById('market-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'market');
+                document.getElementById('settings-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'settings');
+
 
                 document.querySelectorAll('button[data-tab]').forEach(tabButton => {
                     tabButton.classList.toggle('bg-sky-600', tabButton.dataset.tab === this.state.currentTab); 
@@ -927,45 +1389,49 @@
                 });
             },
             
-            createUnlockCardInnerHtml(resource) { 
-                let requirementsText = "Requirements: ";
-                const actualRequirements = this.getUnlockRequirements(resource);
-                if (!resource || !actualRequirements) return "<p>Error loading requirements.</p>"; 
+            createUnlockCardInnerHtml(item, itemType = 'resource') { 
+                let requirementsText = "Requires: ";
+                const actualRequirements = this.getUnlockRequirements(item);
+                if (!item || !actualRequirements) return "<p>Error loading requirements.</p>"; 
                 
-                if (actualRequirements.money) requirementsText += `$${this.formatNumber(actualRequirements.money)} `;
+                const reqParts = [];
+                if (actualRequirements.money) reqParts.push(`$${this.formatNumber(actualRequirements.money)}`);
                 if (actualRequirements.resources) {
-                    requirementsText += Object.entries(actualRequirements.resources)
+                    reqParts.push(...Object.entries(actualRequirements.resources)
                         .map(([key, val]) => {
                             const reqResource = this.state.resources[key];
                             return `${this.formatNumber(val)} ${reqResource ? reqResource.name : key}`;
-                        })
-                        .join(', ');
+                        }));
                 }
+                requirementsText += reqParts.join(', ');
+
                 return `
                     <div class="flex-grow">
-                        <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${resource.name} (Locked)</h3>
+                        <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${item.name} (Locked)</h3>
                         <p class="text-xs sm:text-sm text-slate-400 my-1 sm:my-2">${requirementsText}</p>
                     </div>
-                    <button data-action="unlockResource" data-resource="${resource.id}" class="mt-auto w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Unlock ${resource.name}</button>`;
+                    <button data-action="unlockItem" data-itemid="${item.id}" data-itemtype="${itemType}" class="mt-auto w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Unlock ${item.name}</button>`;
             },
 
-            createLockedCardInnerHtml(resource) { 
-                let requirementsText = "Requirements: ";
-                const actualRequirements = this.getUnlockRequirements(resource);
-                if (!resource || !actualRequirements) return "<p>Error loading requirements.</p>"; 
-
-                if (actualRequirements.money) requirementsText += `$${this.formatNumber(actualRequirements.money)} `;
+            createLockedCardInnerHtml(item, itemType = 'resource') { 
+                let requirementsText = "Requires: ";
+                const actualRequirements = this.getUnlockRequirements(item);
+                if (!item || !actualRequirements) return "<p>Error loading requirements.</p>"; 
+                
+                const reqParts = [];
+                if (actualRequirements.money) reqParts.push(`$${this.formatNumber(actualRequirements.money)}`);
                 if (actualRequirements.resources) {
-                     requirementsText += Object.entries(actualRequirements.resources)
+                     reqParts.push(...Object.entries(actualRequirements.resources)
                         .map(([key, val]) => {
                             const reqResource = this.state.resources[key];
                             return `${this.formatNumber(val)} ${reqResource ? reqResource.name : key}`;
-                        })
-                        .join(', ');
+                        }));
                 }
+                 requirementsText += reqParts.join(', ');
+
                 return `
                     <div class="flex-grow">
-                        <h3 class="text-lg sm:text-xl font-semibold text-slate-500">${resource.name} (Locked)</h3>
+                        <h3 class="text-lg sm:text-xl font-semibold text-slate-500">${item.name} (Locked)</h3>
                         <p class="text-xs sm:text-sm text-slate-400 my-1 sm:my-2">${requirementsText}</p>
                     </div>
                     <p class="text-center text-slate-500 italic mt-auto text-xs sm:text-sm">Meet requirements to unlock.</p>`;
@@ -977,18 +1443,24 @@
                     if (!target) return;
 
                     const action = target.dataset.action;
-                    const resourceId = target.dataset.resource;
+                    const resourceId = target.dataset.resourceid; // Changed from 'resource' to 'resourceid' for clarity
                     const upgradeKey = target.dataset.upgradekey; 
                     const assetId = target.dataset.assetid; 
+                    const processorId = target.dataset.processorid;
+                    const upgradeType = target.dataset.upgradetype;
+                    const itemId = target.dataset.itemid;
+                    const itemType = target.dataset.itemtype;
+                    const sellAmount = target.dataset.sellamount;
 
-                    if (action === 'manualMine') this.manualMine(resourceId);
-                    else if (action === 'buyManualMineUpgrade') this.buyManualMineUpgrade(resourceId);
-                    else if (action === 'buyMiner') this.buyMiner(resourceId);
-                    else if (action === 'buyMinerSpeedUpgrade') this.buyMinerSpeedUpgrade(resourceId);
+
+                    if (action === 'manualMine') this.manualMine(target.dataset.resource); // Kept 'resource' for this one as it's distinct
+                    else if (action === 'buyManualMineUpgrade') this.buyManualMineUpgrade(target.dataset.resource);
+                    else if (action === 'buyMiner') this.buyMiner(target.dataset.resource);
+                    else if (action === 'buyMinerSpeedUpgrade') this.buyMinerSpeedUpgrade(target.dataset.resource);
                     else if (action === 'sellAllResources') this.sellAllResources();
                     else if (action === 'buyGlobalUpgrade') this.buyGlobalUpgrade(upgradeKey); 
-                    else if (action === 'unlockResource') this.unlockResource(resourceId);
-                    // Removed 'resetGame' action as settings tab is gone.
+                    else if (action === 'unlockItem') this.unlockItem(itemId, itemType); 
+                    else if (action === 'resetGame') this.confirmResetGame(); 
                     else if (action === 'buyShares') {
                         const amountInput = document.getElementById(`buy-${assetId}-amount`);
                         if (amountInput) {
@@ -1001,6 +1473,23 @@
                             this.sellShares(assetId, amountInput.value);
                             amountInput.value = ''; 
                         }
+                    } else if (action === 'startProcessing') this.startProcessing(processorId);
+                    else if (action === 'buyProcessorUpgrade') this.buyProcessorUpgrade(processorId, upgradeType);
+                    else if (action === 'sellResource') {
+                        if (sellAmount === 'all') {
+                            const resource = this.state.resources[resourceId];
+                            if (resource) this.sellResource(resourceId, resource.count);
+                        } else {
+                            this.sellResource(resourceId, sellAmount);
+                        }
+                    } else if (action === 'sellResourceCustom') {
+                        const amountInput = document.getElementById(`sell-amount-${resourceId}`);
+                        if (amountInput && amountInput.value) {
+                            this.sellResource(resourceId, amountInput.value);
+                            amountInput.value = ''; // Clear input after selling
+                        } else {
+                            this.showToast("Please enter a quantity to sell.", true);
+                        }
                     }
                 });
                  
@@ -1010,13 +1499,22 @@
             },
             
             switchTab(tabId) {
-                if(tabId && this.state.currentTab !== tabId && tabId !== 'settings') { // Ensure not switching to removed settings tab
+                if(tabId && this.state.currentTab !== tabId) { 
                     this.state.currentTab = tabId;
                     this.render(); 
                 }
             },
 
-            // confirmResetGame() is removed as the settings tab and reset button are gone.
+            confirmResetGame() { 
+                this.showModal(
+                    "Confirm Reset", 
+                    "Are you sure you want to reset all your game progress? This action cannot be undone.",
+                    async () => { 
+                        this.resetState(); 
+                        this.showToast("Game has been reset!", false);
+                    }
+                );
+            },
 
             formatNumber(num, precision = 0) {
                 if (num === undefined || num === null || isNaN(parseFloat(num))) return '0'; 
@@ -1112,7 +1610,7 @@
         .grid { align-items: stretch; } 
         .grid > div { display: flex; flex-direction: column; } 
         .grid > div > div:first-child { flex-grow: 1; } 
-        #achievements-container { max-height: 70vh; overflow-y: auto; }
+        #achievements-container, #processors-container, #market-container { max-height: 70vh; overflow-y: auto; } /* Added market-container */
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-2 sm:p-4 selection:bg-sky-500 selection:text-white">
@@ -1125,17 +1623,26 @@
         <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-sky-400">Mine Tycoon</h1>
         <p id="money-display" class="text-2xl sm:text-3xl md:text-4xl font-semibold text-green-400 mt-1 sm:mt-2 mb-2 sm:mb-3">$0.00</p>
         <button data-action="sellAllResources" class="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-2 px-4 sm:py-2.5 sm:px-8 rounded-lg shadow-md transition-all duration-150 ease-in-out transform hover:scale-105 text-sm sm:text-base">
-            Sell All Resources
+            Sell All (Quick Sell)
         </button>
     </header>
 
     <nav class="w-full max-w-7xl mb-6 sm:mb-8 sticky top-0 z-40 bg-slate-900 py-2 shadow-sm">
-        <div class="flex justify-center space-x-1 sm:space-x-2 bg-slate-800 p-1 sm:p-1.5 rounded-lg shadow-lg">
-            <button data-tab="mines" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Mines</button>
-            <button data-tab="upgrades" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Upgrades</button>
-            <button data-tab="investments" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Invest</button>
-            <button data-tab="achievements" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Achieve</button>
+        <div class="flex flex-col items-center bg-slate-800 p-1 sm:p-1.5 rounded-lg shadow-lg">
+            <div class="flex justify-center space-x-1 sm:space-x-2 w-full mb-1 sm:mb-1.5">
+                <button data-tab="mines" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Mines</button>
+                <button data-tab="upgrades" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Upgrades</button>
+                <button data-tab="investments" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Invest</button>
             </div>
+            <div class="flex justify-center space-x-1 sm:space-x-2 w-full mb-1 sm:mb-1.5">
+                <button data-tab="process" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Process</button>
+                <button data-tab="achievements" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Achieve</button>
+            </div>
+            <div class="flex justify-center space-x-1 sm:space-x-2 w-full">
+                 <button data-tab="market" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Market</button>
+                <button data-tab="settings" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Settings</button>
+            </div>
+        </div>
     </nav>
 
     <main class="w-full max-w-7xl px-1 sm:px-2">
@@ -1163,8 +1670,36 @@
             <div id="achievements-container"> 
             </div>
         </div>
+
+        <div id="process-tab-content" class="hidden">
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-sky-300 text-center">Resource Processors</h2>
+            <div id="processors-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+            </div>
+        </div>
+
+        <div id="market-tab-content" class="hidden">
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-sky-300 text-center">Sell Resources</h2>
+            <div id="market-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                </div>
+        </div>
         
-        </main>
+        <div id="settings-tab-content" class="hidden"> 
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-sky-300 text-center">Game Settings</h2>
+            <div class="max-w-md mx-auto bg-slate-800 p-4 sm:p-6 rounded-lg shadow-xl">
+                <div class="mb-6">
+                    <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Reset Game</h3>
+                    <p class="text-xs sm:text-sm text-slate-400 mb-3">Warning: This will erase all your current progress, including money, resources, upgrades, and achievements. This action cannot be undone.</p>
+                    <button data-action="resetGame" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 ease-in-out transform hover:scale-105 text-sm sm:text-base">
+                        Reset All Progress
+                    </button>
+                </div>
+                 <div class="mt-6 pt-4 border-t border-slate-700">
+                    <p class="text-xs text-slate-500 text-center">Player ID: <span id="user-id-display-settings" class="font-mono">Loading...</span></p>
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <div id="toast-notification" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 p-3 sm:p-4 rounded-lg text-white shadow-xl hidden transition-all duration-300 ease-in-out z-[150] text-xs sm:text-sm max-w-xs sm:max-w-sm break-words">
         <p id="toast-message"></p>
@@ -1182,7 +1717,7 @@
     </div>
 
     <footer class="w-full max-w-7xl mt-8 sm:mt-12 py-4 sm:py-6 text-center text-xs sm:text-sm text-slate-500 border-t border-slate-700">
-        Mine Tycoon &copy; 2024-2025. Upgraded Version.
+        Mine Tycoon &copy; 2024-2025. Market Update.
     </footer>
 
 </body>
