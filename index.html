@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mine Tycoon - Advanced Content Update</title>
+    <title>Mine Tycoon - Advanced Content & UI Overhaul</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script type="module">
@@ -69,7 +69,7 @@
                                     console.error("Error during sign-in:", error);
                                     isAuthReady = true; 
                                     this.resetState(false); 
-                                    this.checkDailyLogin(); // Check daily login even on fresh start if offline
+                                    this.checkDailyLogin(); 
                                     this.render();
                                     document.getElementById('loading-message').classList.add('hidden');
                                 }
@@ -102,7 +102,7 @@
                 this.startMarketUpdates(); 
                 setInterval(() => this.update(), 1000); 
                 setInterval(() => this.autoSaveGame(), 30000); 
-                setInterval(() => { // Update total time played every 5 seconds
+                setInterval(() => { 
                     if (this.state && this.state.stats) {
                         this.state.stats.totalTimePlayedSeconds += 5;
                     }
@@ -255,10 +255,10 @@
                         obsidian: { id: 'obsidian', name: 'Obsidian', count: 0, value: 75000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000000, miners: 0, minerCostBase: 200000000, minerProductionBase: 0.2, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 80000000, unlocked: false, unlockRequirements: { money: 1000000000, resources: { amethyst: 20 } } },
                         mythril: { id: 'mythril', name: 'Mythril', count: 0, value: 200000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 250000000, miners: 0, minerCostBase: 1000000000, minerProductionBase: 0.2, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 400000000, unlocked: false, unlockRequirements: { money: 5000000000, resources: { obsidian: 100 } } },
                         orichalcum: { id: 'orichalcum', name: 'Orichalcum', count: 0, value: 1000000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1000000000, miners: 0, minerCostBase: 5000000000, minerProductionBase: 0.2, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 2000000000, unlocked: false, unlockRequirements: { money: 25000000000, resources: { mythril: 50 } } },
-                        element_x: { id: 'element_x', name: 'Element X', count: 0, value: 5000000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000000000, miners: 0, minerCostBase: 200000000000, minerProductionBase: 0.2, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 100000000000, unlocked: false, unlockRequirements: null }, // Unlocked via research
+                        element_x: { id: 'element_x', name: 'Element X', count: 0, value: 5000000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000000000, miners: 0, minerCostBase: 200000000000, minerProductionBase: 0.2, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 100000000000, unlocked: false, unlockRequirements: null }, 
                         titanium: { id: 'titanium', name: 'Titanium', count: 0, value: 250000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1.5e11, miners: 0, minerCostBase: 7.5e11, minerProductionBase: 0.15, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 5e11, unlocked: false, unlockRequirements: { money: 1e12, resources: { obsidian: 500 } } },
-                        uranium: { id: 'uranium', name: 'Uranium', count: 0, value: 1.2e7, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 5e13, miners: 0, minerCostBase: 2e14, minerProductionBase: 0.1, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 1e14, unlocked: false, unlockRequirements: null }, // Unlocked via research: unlock_nuclear_extraction
-                        void_crystal: { id: 'void_crystal', name: 'Void Crystal', count: 0, value: 1e9, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1e17, miners: 0, minerCostBase: 5e17, minerProductionBase: 0.05, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 2.5e17, unlocked: false, unlockRequirements: null }, // Unlocked via research: unlock_void_harnessing
+                        uranium: { id: 'uranium', name: 'Uranium', count: 0, value: 1.2e7, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 5e13, miners: 0, minerCostBase: 2e14, minerProductionBase: 0.1, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 1e14, unlocked: false, unlockRequirements: null }, 
+                        void_crystal: { id: 'void_crystal', name: 'Void Crystal', count: 0, value: 1e9, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1e17, miners: 0, minerCostBase: 5e17, minerProductionBase: 0.05, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 2.5e17, unlocked: false, unlockRequirements: null }, 
                         
                         // Processed Resources
                         iron_ingot: { id: 'iron_ingot', name: 'Iron Ingot', count: 0, value: 150, unlocked: false }, 
@@ -267,18 +267,15 @@
                         silicon: { id: 'silicon', name: 'Silicon Wafer', count: 0, value: 250, unlocked: false},
                         steel_plate: { id: 'steel_plate', name: 'Steel Plate', count: 0, value: 1300, unlocked: false},
                         advanced_circuit: { id: 'advanced_circuit', name: 'Adv. Circuit', count: 0, value: 6000, unlocked: false},
-                        // Polished Gems
                         polished_diamond: { id: 'polished_diamond', name: 'Polished Diamond', count: 0, value: 750, unlocked: false }, 
                         polished_platinum: { id: 'polished_platinum', name: 'Polished Platinum', count: 0, value: 2200, unlocked: false }, 
                         polished_emerald: { id: 'polished_emerald', name: 'Polished Emerald', count: 0, value: 5800, unlocked: false }, 
                         polished_ruby: { id: 'polished_ruby', name: 'Polished Ruby', count: 0, value: 14500, unlocked: false }, 
                         polished_sapphire: { id: 'polished_sapphire', name: 'Polished Sapphire', count: 0, value: 34000, unlocked: false }, 
                         polished_amethyst: { id: 'polished_amethyst', name: 'Polished Amethyst', count: 0, value: 85000, unlocked: false }, 
-                        // Exotic Processed Materials
                         refined_element_x: { id: 'refined_element_x', name: 'Refined Element X', count: 0, value: 2.5e7, unlocked: false }, 
                         quantum_entangler: { id: 'quantum_entangler', name: 'Quantum Entangler', count: 0, value: 1.5e8, unlocked: false }, 
                         singularity_core: { id: 'singularity_core', name: 'Singularity Core', count: 0, value: 1e9, unlocked: false }, 
-                        // New Processed
                         titanium_alloy: { id: 'titanium_alloy', name: 'Titanium Alloy', count: 0, value: 1.5e6, unlocked: false },
                         enriched_uranium: { id: 'enriched_uranium', name: 'Enriched Uranium', count: 0, value: 7.5e7, unlocked: false },
                         power_cell: { id: 'power_cell', name: 'Power Cell', count: 0, value: 5e8, unlocked: false },
@@ -356,7 +353,6 @@
                             isActive: false, currentProgress: 0, unlocked: false,
                             unlockRequirements: { resources: { gold_bar: 20, copper_ingot: 50, silicon: 30 }, money: 100000 }
                         },
-                        // Gem Polishers
                         diamond_polisher: {
                             id: 'diamond_polisher', name: 'Diamond Polisher', inputs: [{id: 'diamond', amountBase: 1}],
                             outputResourceId: 'polished_diamond', outputAmountBase: 1, processingTimeBase: 45, costToProcessBase: 125, 
@@ -399,7 +395,6 @@
                             isActive: false, currentProgress: 0, unlocked: false,
                             unlockRequirements: { resources: { amethyst: 10, advanced_circuit: 20 }, money: 100000000 }
                         },
-                        // Exotic Processors - Unlocked via Research
                         element_x_refinery: {
                             id: 'element_x_refinery', name: 'Element X Refinery', inputs: [{id: 'element_x', amountBase: 1}, {id: 'orichalcum', amountBase: 5}, {id: 'mythril', amountBase: 10}],
                             outputResourceId: 'refined_element_x', outputAmountBase: 1, processingTimeBase: 120, costToProcessBase: 1e7,
@@ -418,7 +413,6 @@
                             speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 1e10, efficiencyUpgradeCostBase: 1.5e10,
                             isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null
                         },
-                        // New Processors
                         alloy_forge: {
                             id: 'alloy_forge', name: 'Alloy Forge', inputs: [{id: 'titanium', amountBase: 5}, {id: 'iron_ingot', amountBase: 20}, {id: 'coal', amountBase: 50}],
                             outputResourceId: 'titanium_alloy', outputAmountBase: 1, processingTimeBase: 180, costToProcessBase: 5e5,
@@ -429,25 +423,25 @@
                             id: 'centrifuge_array', name: 'Centrifuge Array', inputs: [{id: 'uranium', amountBase: 10}, {id: 'silicon', amountBase: 25}],
                             outputResourceId: 'enriched_uranium', outputAmountBase: 1, processingTimeBase: 360, costToProcessBase: 2.5e7,
                             speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 5e12, efficiencyUpgradeCostBase: 7.5e12,
-                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null // Unlocked by research
+                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null 
                         },
                         energy_fabricator: {
                             id: 'energy_fabricator', name: 'Energy Fabricator', inputs: [{id: 'enriched_uranium', amountBase: 1}, {id: 'advanced_circuit', amountBase: 50}, {id: 'polished_platinum', amountBase: 10}],
                             outputResourceId: 'power_cell', outputAmountBase: 1, processingTimeBase: 480, costToProcessBase: 1e8,
                             speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 2e13, efficiencyUpgradeCostBase: 3e13,
-                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null // Unlocked by research
+                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null 
                         },
                         quantum_lab: {
                             id: 'quantum_lab', name: 'Quantum Lab', inputs: [{id: 'quantum_entangler', amountBase: 2}, {id: 'refined_element_x', amountBase: 5}, {id: 'power_cell', amountBase: 1}, {id: 'polished_amethyst', amountBase: 20}],
                             outputResourceId: 'quantum_computer', outputAmountBase: 1, processingTimeBase: 1200, costToProcessBase: 5e9,
                             speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 1e15, efficiencyUpgradeCostBase: 1.5e15,
-                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null // Unlocked by research
+                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null 
                         },
                         void_stabilizer: {
                             id: 'void_stabilizer', name: 'Void Stabilizer', inputs: [{id: 'void_crystal', amountBase: 1}, {id: 'singularity_core', amountBase: 1}, {id: 'quantum_computer', amountBase: 1}],
                             outputResourceId: 'void_manipulator', outputAmountBase: 1, processingTimeBase: 3600, costToProcessBase: 1e11,
                             speedLevel: 0, efficiencyLevel: 0, speedUpgradeCostBase: 1e18, efficiencyUpgradeCostBase: 2e18,
-                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null // Unlocked by research
+                            isActive: false, currentProgress: 0, unlocked: false, unlockRequirements: null 
                         },
                     },
                     research: { 
@@ -455,8 +449,7 @@
                         unlock_element_x_refinery: { id: 'unlock_element_x_refinery', name: 'Element X Refining', description: 'Unlocks the Element X Refinery.', cost: { money: 5e10, resources: { element_x: 5 } }, researchTimeBase: 180, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'element_x_refinery', requiresResearch: 'unlock_deep_core_drill' },
                         unlock_quantum_assembler: { id: 'unlock_quantum_assembler', name: 'Quantum Entanglement', description: 'Unlocks the Quantum Assembler.', cost: { money: 2.5e11, resources: { refined_element_x: 5, advanced_circuit: 100 } }, researchTimeBase: 450, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'quantum_assembler', requiresResearch: 'unlock_element_x_refinery' },
                         unlock_singularity_forge: { id: 'unlock_singularity_forge', name: 'Singularity Forging', description: 'Unlocks the Singularity Forge.', cost: { money: 1e12, resources: { quantum_entangler: 5, orichalcum: 250 } }, researchTimeBase: 900, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'singularity_forge', requiresResearch: 'unlock_quantum_assembler' },
-                        // New Research
-                        unlock_nuclear_extraction: { id: 'unlock_nuclear_extraction', name: 'Nuclear Extraction Tech', description: 'Enables mining of Uranium.', cost: { money: 1e13, resources: { refined_element_x: 20, titanium_alloy: 10 } }, researchTimeBase: 600, isResearching: false, currentProgress: 0, unlocked: false, unlocksResource: 'uranium', requiresResearch: 'unlock_element_x_refinery' },
+                        unlock_nuclear_extraction: { id: 'unlock_nuclear_extraction', name: 'Nuclear Extraction Tech', description: 'Enables mining of Uranium.', cost: { money: 1e13, resources: { refined_element_x: 20, titanium_alloy: 10 } }, researchTimeBase: 600, isResearching: false, currentProgress: 0, unlocked: false, unlocksResource: 'uranium', requiresResearch: 'unlock_element_x_refinery' }, // Requires Titanium Alloy
                         unlock_centrifuge_array: { id: 'unlock_centrifuge_array', name: 'Uranium Enrichment', description: 'Unlocks the Centrifuge Array for Enriched Uranium.', cost: { money: 5e13, resources: { uranium: 50, titanium_alloy: 25 } }, researchTimeBase: 720, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'centrifuge_array', requiresResearch: 'unlock_nuclear_extraction' },
                         unlock_energy_fabricator: { id: 'unlock_energy_fabricator', name: 'Advanced Power Cells', description: 'Unlocks the Energy Fabricator for Power Cells.', cost: { money: 2e14, resources: { enriched_uranium: 10, advanced_circuit: 200 } }, researchTimeBase: 900, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'energy_fabricator', requiresResearch: 'unlock_centrifuge_array' },
                         unlock_quantum_computing: { id: 'unlock_quantum_computing', name: 'Quantum Computing', description: 'Unlocks the Quantum Lab to build Quantum Computers.', cost: { money: 1e15, resources: { quantum_entangler: 20, power_cell: 5 } }, researchTimeBase: 1500, isResearching: false, currentProgress: 0, unlocked: false, unlocksProcessor: 'quantum_lab', requiresResearch: 'unlock_energy_fabricator' },
@@ -475,26 +468,25 @@
                         individualMarketSalesCount: 0,
                         totalMoneyFromPreviousPrestiges: 0,
                         totalManualClicks: 0,
-                        totalResourcesMined: {}, // Will be populated with resource IDs
-                        totalItemsProcessed: {}, // Will be populated with processed resource IDs
+                        totalResourcesMined: {}, 
+                        totalItemsProcessed: {}, 
                         currentRunMoneyEarned: 0,
                         highestMoneyThisPrestige: 0,
                         allTimeHighestMoney: 0,
                         totalTimePlayedSeconds: 0,
-                        sessionStartTime: Date.now(), // For current session time, not saved directly but used
+                        sessionStartTime: Date.now(), 
                         dailyLogin: {
-                            lastLoginTimestamp: null, // Timestamp of the last daily reward claim
+                            lastLoginTimestamp: null, 
                         }
                     },
                     lastUpdate: Date.now(),
                     lastSave: null,
                     currentTab: 'mines', 
                 };
-                // Initialize stats counters
                 Object.keys(baseState.resources).forEach(resId => {
-                    if (baseState.resources[resId].manualMineBaseAmount) { // Only for mineable resources
+                    if (baseState.resources[resId].manualMineBaseAmount) { 
                         baseState.stats.totalResourcesMined[resId] = 0;
-                    } else if (baseState.resources[resId].value > 0 && !baseState.resources[resId].manualMineBaseAmount) { // Processed items
+                    } else if (baseState.resources[resId].value > 0 && !baseState.resources[resId].manualMineBaseAmount) { 
                          baseState.stats.totalItemsProcessed[resId] = 0;
                     }
                 });
@@ -522,18 +514,17 @@
 
 
                 const statsToKeep = isPrestigeReset ? {
-                    ...this.state.stats, // Keep most stats
-                    currentRunMoneyEarned: 0, // Reset for new run
-                    highestMoneyThisPrestige: 0, // Reset for new run
-                } : { // Hard reset stats
+                    ...this.state.stats, 
+                    currentRunMoneyEarned: 0, 
+                    highestMoneyThisPrestige: 0, 
+                } : { 
                     totalSoldViaMarketValue: 0, individualMarketSalesCount: 0, totalMoneyFromPreviousPrestiges: 0,
                     totalManualClicks: 0, totalResourcesMined: {}, totalItemsProcessed: {},
-                    currentRunMoneyEarned: 0, highestMoneyThisPrestige: 0, allTimeHighestMoney: this.state.stats.allTimeHighestMoney, // Keep all time highest on hard reset too
-                    totalTimePlayedSeconds: this.state.stats.totalTimePlayedSeconds, // Keep total time played
+                    currentRunMoneyEarned: 0, highestMoneyThisPrestige: 0, allTimeHighestMoney: this.state.stats.allTimeHighestMoney, 
+                    totalTimePlayedSeconds: this.state.stats.totalTimePlayedSeconds, 
                     sessionStartTime: Date.now(),
-                    dailyLogin: { lastLoginTimestamp: this.state.stats.dailyLogin.lastLoginTimestamp } // Preserve last login
+                    dailyLogin: { lastLoginTimestamp: this.state.stats.dailyLogin.lastLoginTimestamp } 
                 };
-                 // Ensure resource/item specific stat counters are initialized for hard reset
                 if (!isPrestigeReset) {
                     const defaultRes = this.getDefaultState().resources;
                      Object.keys(defaultRes).forEach(resId => {
@@ -579,7 +570,7 @@
                 }
 
                 this.state.lastUpdate = Date.now();
-                this.state.stats.sessionStartTime = Date.now(); // Reset session timer
+                this.state.stats.sessionStartTime = Date.now(); 
                 console.log(isPrestigeReset ? "Game state reset for Prestige." : "Game state hard reset to default.");
 
                 if (db && userId && isAuthReady) {
@@ -604,7 +595,6 @@
                 let processedItemsSummary = "";
                 let researchProgressSummary = "";
 
-                // Miner production
                 for (const resKey in this.state.resources) {
                     const resource = this.state.resources[resKey];
                     if (resource.unlocked && resource.miners > 0 && resource.minerProductionBase) {
@@ -621,7 +611,6 @@
                 if (minedResourcesSummary) offlineSummary += "<strong>Mined:</strong><br>" + minedResourcesSummary + "<br>";
 
 
-                // Processor production
                 for (const procId in this.state.processors) {
                     const processor = this.state.processors[procId];
                     if (processor.unlocked && processor.isActive) { 
@@ -663,7 +652,6 @@
                 }
                  if (processedItemsSummary) offlineSummary += "<strong>Processed:</strong><br>" + processedItemsSummary + "<br>";
 
-                // Offline Research
                 for (const researchId in this.state.research) {
                     const researchItem = this.state.research[researchId];
                     if (researchItem.isResearching && !researchItem.unlocked) {
@@ -690,7 +678,7 @@
                 this.state.lastUpdate = now; 
 
                 if (anyProduction) {
-                    this.showToast(offlineSummary, false, 15000); // Longer duration for detailed report
+                    this.showToast(offlineSummary, false, 15000); 
                     console.log("Offline progression calculated:", offlineSummary.replace(/<br>/g, '\n').replace(/&bull;/g, '-').replace(/<strong>/g, '').replace(/<\/strong>/g, ''));
                 } else {
                     console.log("No significant offline progression to calculate.");
@@ -698,7 +686,7 @@
             },
 
 
-            async loadGame() { // Loads from Firestore
+            async loadGame() { 
                 if (!db || !userId) {
                     this.resetState(false); 
                     this.calculateOfflineProgression(Date.now());
@@ -718,7 +706,7 @@
                         if (docSnap.exists()) {
                             const loadedData = docSnap.data();
                             this.applyLoadedState(loadedData, defaultState); 
-                            lastKnownUpdateTime = this.state.lastUpdate || defaultState.lastUpdate; // Use lastUpdate from loaded state
+                            lastKnownUpdateTime = this.state.lastUpdate || defaultState.lastUpdate; 
                             console.log("Game loaded and merged from Firestore:", JSON.parse(JSON.stringify(this.state)));
                         } else {
                             console.log("No saved game found. Starting new game.");
@@ -728,7 +716,7 @@
                         }
                         
                         this.calculateOfflineProgression(lastKnownUpdateTime);
-                        this.checkDailyLogin(); // Check for daily reward after loading and offline calc
+                        this.checkDailyLogin(); 
                         this.checkAllAchievements(false); 
                         this.render();
                         const lm = document.getElementById('loading-message'); if (lm) lm.classList.add('hidden');
@@ -824,24 +812,20 @@
                     this.state.research[researchKey].currentProgress = this.state.research[researchKey].currentProgress || 0;
                 }
                 
-                // Deep merge stats, ensuring all stat keys from defaultState are present
-                this.state.stats = { ...defaultState.stats }; // Start with default structure
+                this.state.stats = { ...defaultState.stats }; 
                 if (loadedData.stats) {
                     for (const statKey in defaultState.stats) {
                         if (loadedData.stats.hasOwnProperty(statKey)) {
                             if (typeof defaultState.stats[statKey] === 'object' && defaultState.stats[statKey] !== null && !Array.isArray(defaultState.stats[statKey])) {
-                                // For nested objects like totalResourcesMined, totalItemsProcessed, dailyLogin
                                 this.state.stats[statKey] = { ...defaultState.stats[statKey], ...(loadedData.stats[statKey] || {}) };
                             } else {
                                 this.state.stats[statKey] = loadedData.stats[statKey];
                             }
                         }
                     }
-                     // Ensure specific nested stat objects are initialized if they were missing in the save
                     if (!this.state.stats.totalResourcesMined) this.state.stats.totalResourcesMined = {};
                     if (!this.state.stats.totalItemsProcessed) this.state.stats.totalItemsProcessed = {};
                     if (!this.state.stats.dailyLogin) this.state.stats.dailyLogin = { ...defaultState.stats.dailyLogin };
-
                 }
 
 
@@ -1104,7 +1088,6 @@
                     }
                 }
                 
-                // Update money tracking for stats
                 if (this.state.stats.highestMoneyThisPrestige < this.state.money) {
                     this.state.stats.highestMoneyThisPrestige = this.state.money;
                 }
@@ -1597,29 +1580,28 @@
                 const lastLoginTimestamp = this.state.stats.dailyLogin.lastLoginTimestamp;
 
                 if (!lastLoginTimestamp || lastLoginTimestamp < todayUTC) {
-                    // Grant daily reward
-                    const moneyReward = 1000 * (1 + this.state.prestige.prestigesDone * 0.5); // Scale with prestiges
+                    const moneyReward = 1000 * (1 + this.state.prestige.prestigesDone * 0.5); 
                     this.state.money += moneyReward;
                     this.state.stats.currentRunMoneyEarned += moneyReward;
 
                     const resourceTypes = ['stone', 'coal', 'iron', 'copper'];
                     let resourceRewardText = "";
-                    for (let i = 0; i < 3; i++) { // Give 3 types of random basic resources
+                    for (let i = 0; i < 3; i++) { 
                         const randomResKey = resourceTypes[Math.floor(Math.random() * resourceTypes.length)];
-                        const resAmount = Math.floor(Math.random() * 50 + 25) * (1 + this.state.prestige.prestigesDone); // 25-75 base, scales
+                        const resAmount = Math.floor(Math.random() * 50 + 25) * (1 + this.state.prestige.prestigesDone); 
                         if (this.state.resources[randomResKey]) {
                             this.state.resources[randomResKey].count += resAmount;
-                            resourceRewardText += `+${this.formatNumber(resAmount)} ${this.state.resources[randomResKey].name}<br>`;
+                            resourceRewardText += `&bull; +${this.formatNumber(resAmount)} ${this.state.resources[randomResKey].name}<br>`;
                         }
                     }
                     
                     this.state.stats.dailyLogin.lastLoginTimestamp = todayUTC;
                     this.saveGame(false); 
 
-                    let rewardMessage = `Welcome back! Here's your daily login bonus:<br>+ $${this.formatNumber(moneyReward, 2)}`;
+                    let rewardMessage = `Welcome back! Here's your daily login bonus:<br><br><strong>+ $${this.formatNumber(moneyReward, 2)}</strong>`;
                     if(resourceRewardText) rewardMessage += `<br><br><strong>Bonus Resources:</strong><br>${resourceRewardText}`;
                     
-                    this.showModal("Daily Login Reward!", rewardMessage, () => { this.render(); }); // Render after modal close
+                    this.showModal("Daily Login Reward!", rewardMessage, () => { this.render(); }); 
                 }
             },
 
@@ -1699,18 +1681,18 @@
                     Object.values(this.state.resources).filter(res => (res.manualMineBaseAmount || res.unlocked) && (res.id !== 'element_x' || (res.id === 'element_x' && res.unlocked)) && (res.id !== 'uranium' || (res.id === 'uranium' && res.unlocked)) && (res.id !== 'void_crystal' || (res.id === 'void_crystal' && res.unlocked))).forEach(res => { 
                         if (!res) return; 
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col'; 
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150'; 
 
                         if (!res.unlocked && res.unlockRequirements) { 
                             if (this.checkUnlockConditions(res)) { 
-                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:bg-slate-600'); 
+                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50'); 
                                 card.innerHTML = this.createUnlockCardInnerHtml(res, 'resource');
                                 card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
                                     e.stopPropagation(); 
                                     this.unlockItem(res.id, 'resource');
                                 });
                             } else {
-                                card.classList.add('opacity-70', 'bg-slate-800'); 
+                                card.classList.add('opacity-60', 'bg-slate-800/70'); 
                                 card.innerHTML = this.createLockedCardInnerHtml(res, 'resource');
                             }
                         } else if (res.unlocked) { 
@@ -1718,33 +1700,33 @@
                             card.innerHTML = `
                                 <div class="flex-grow"> 
                                     <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${res.name}</h3>
-                                    <p class="text-xl sm:text-2xl my-1 sm:my-2">${this.formatNumber(res.count)}</p>
-                                    <p class="text-xs sm:text-sm text-slate-400">Value: $${this.formatNumber(res.value * this.state.globalUpgrades.sellMultiplier.value * heavenlyBonusMultiplier, 2)}/unit</p>
-                                    ${productionRate > 0 ? `<p class="text-xs sm:text-sm text-green-400">Prod: ${this.formatNumber(productionRate, 3)}/s</p>` : ''}
-                                    ${!res.manualMineBaseAmount && !res.minerProductionBase ? '<p class="text-xs text-sky-400 italic">Processed Item</p>' : ''}
+                                    <p class="text-xl sm:text-2xl my-1 sm:my-2 text-white">${this.formatNumber(res.count)}</p>
+                                    <p class="text-xs sm:text-sm text-slate-300">Value: $${this.formatNumber(res.value * this.state.globalUpgrades.sellMultiplier.value * heavenlyBonusMultiplier, 2)}/unit</p>
+                                    ${productionRate > 0 ? `<p class="text-xs sm:text-sm text-green-300">Prod: ${this.formatNumber(productionRate, 3)}/s</p>` : ''}
+                                    ${!res.manualMineBaseAmount && !res.minerProductionBase ? '<p class="text-xs text-sky-300 italic">Processed Item</p>' : ''}
                                 </div>
                                 ${res.manualMineBaseAmount ? ` 
-                                <div class="mt-auto"> 
-                                    <button data-action="manualMine" data-resource="${res.id}" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Mine ${this.formatNumber(this.getManualMineAmount(res),1)}</button>
-                                    <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-600">
-                                        <p class="text-xs sm:text-sm text-slate-300 mb-1">Click Lvl: ${res.manualMineLevel}</p>
-                                        <button data-action="buyManualMineUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md transform hover:scale-105 transition-transform">Upgrade ($${this.formatNumber(this.getManualMineUpgradeCost(res))})</button>
+                                <div class="mt-auto space-y-2 pt-2"> 
+                                    <button data-action="manualMine" data-resource="${res.id}" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Mine ${this.formatNumber(this.getManualMineAmount(res),1)}</button>
+                                    <div class="pt-2 border-t border-slate-600">
+                                        <p class="text-xs sm:text-sm text-slate-200 mb-1">Click Lvl: ${res.manualMineLevel}</p>
+                                        <button data-action="buyManualMineUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-green-600 hover:bg-green-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Upgrade ($${this.formatNumber(this.getManualMineUpgradeCost(res))})</button>
                                     </div>
-                                    <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-600">
-                                        <p class="text-xs sm:text-sm text-slate-300 mb-1">Miners: ${res.miners} (Speed Lvl ${res.minerSpeedLevel + 1})</p>
-                                        <div class="flex space-x-1 mb-1">
-                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="1" class="flex-1 text-xs bg-purple-500 hover:bg-purple-600 text-white py-1 px-1 rounded-md">x1</button>
-                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="10" class="flex-1 text-xs bg-purple-500 hover:bg-purple-600 text-white py-1 px-1 rounded-md">x10</button>
-                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="100" class="flex-1 text-xs bg-purple-500 hover:bg-purple-600 text-white py-1 px-1 rounded-md">x100</button>
-                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="max" class="flex-1 text-xs bg-purple-500 hover:bg-purple-600 text-white py-1 px-1 rounded-md">Max</button>
+                                    <div class="pt-2 border-t border-slate-600">
+                                        <p class="text-xs sm:text-sm text-slate-200 mb-1">Miners: ${res.miners} (Speed Lvl ${res.minerSpeedLevel + 1})</p>
+                                        <div class="flex space-x-1 mb-1.5">
+                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="1" class="flex-1 text-xs bg-purple-600 hover:bg-purple-500 text-white py-1 px-1 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">x1</button>
+                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="10" class="flex-1 text-xs bg-purple-600 hover:bg-purple-500 text-white py-1 px-1 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">x10</button>
+                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="100" class="flex-1 text-xs bg-purple-600 hover:bg-purple-500 text-white py-1 px-1 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">x100</button>
+                                            <button data-action="buyMiner" data-resourceid="${res.id}" data-amount="max" class="flex-1 text-xs bg-purple-600 hover:bg-purple-500 text-white py-1 px-1 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Max</button>
                                         </div>
                                         <p class="text-xs text-slate-400 mb-1 text-center">Cost for next: $${this.formatNumber(this.getMinerCost(res, res.miners))}</p>
-                                        <button data-action="buyMinerSpeedUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-teal-500 hover:bg-teal-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md transform hover:scale-105 transition-transform">Upgrade Speed ($${this.formatNumber(this.getMinerSpeedUpgradeCost(res))})</button>
+                                        <button data-action="buyMinerSpeedUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-teal-600 hover:bg-teal-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Upgrade Speed ($${this.formatNumber(this.getMinerSpeedUpgradeCost(res))})</button>
                                     </div>
                                 </div>` : '' }`;
                         } else { 
                              card.innerHTML = `<h3 class="text-lg sm:text-xl font-semibold text-slate-500">${res.name} (Research Required)</h3>`;
-                             card.classList.add('opacity-50', 'bg-slate-800');
+                             card.classList.add('opacity-50', 'bg-slate-800/70');
                         }
                         resourcesContainer.appendChild(card);
                     });
@@ -1758,7 +1740,7 @@
                         const upgrade = this.state.globalUpgrades[upgradeKey];
                         if (!upgrade) continue; 
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col justify-between'; 
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col justify-between hover:bg-slate-600/70 transition-colors duration-150'; 
                         let effectDesc = upgrade.description || ""; 
                         let currentEffect = "";
                         if (upgradeKey === "sellMultiplier" || upgradeKey === "minerSpeedBoost" || upgradeKey === "manualMiningBoost" || upgradeKey === "masterGeologist") {
@@ -1775,7 +1757,7 @@
                                 <p class="text-sm sm:text-base my-1 text-sky-300">Current: ${currentEffect}</p>
                                 <p class="text-xs sm:text-sm text-slate-400 mb-2">Level: ${upgrade.level}</p>
                             </div>
-                            <button data-action="buyGlobalUpgrade" data-upgradekey="${upgradeKey}" class="mt-auto w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Upgrade ($${this.formatNumber(this.getGlobalUpgradeCost(upgradeKey))})</button>`;
+                            <button data-action="buyGlobalUpgrade" data-upgradekey="${upgradeKey}" class="mt-auto w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Upgrade ($${this.formatNumber(this.getGlobalUpgradeCost(upgradeKey))})</button>`;
                         globalUpgradesContainer.appendChild(card);
                     }
                 }
@@ -1786,7 +1768,7 @@
                     for (const procId in this.state.processors) {
                         const processor = this.state.processors[procId];
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
 
                         if (!processor.unlocked) {
                             let researchPrerequisiteMet = true;
@@ -1803,14 +1785,14 @@
                             }
 
                             if (researchPrerequisiteMet && this.checkUnlockConditions(processor)) {
-                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:bg-slate-600');
+                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50');
                                 card.innerHTML = this.createUnlockCardInnerHtml(processor, 'processor');
                                  card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
                                     e.stopPropagation(); 
                                     this.unlockItem(processor.id, 'processor');
                                 });
                             } else {
-                                card.classList.add('opacity-70', 'bg-slate-800');
+                                card.classList.add('opacity-60', 'bg-slate-800/70');
                                 card.innerHTML = this.createLockedCardInnerHtml(processor, 'processor', researchPrerequisiteText);
                             }
                         } else {
@@ -1832,21 +1814,21 @@
                                     <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualProcessingTime, 1)}s | Cost: $${this.formatNumber(actualCostToProcess)}</p>
                                     
                                     ${processor.isActive ? `
-                                    <div class="w-full bg-slate-600 rounded-full h-2.5 my-2">
-                                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
+                                    <div class="w-full bg-slate-600 rounded-full h-3 my-2 overflow-hidden">
+                                        <div class="bg-sky-500 h-3 rounded-full transition-all duration-200 ease-linear" style="width: ${progressPercent}%"></div>
                                     </div>
-                                    <p class="text-xs text-center text-blue-300">Processing... (${this.formatNumber(Math.max(0, actualProcessingTime - processor.currentProgress), 1)}s left)</p>
+                                    <p class="text-xs text-center text-sky-300">Processing... (${this.formatNumber(Math.max(0, actualProcessingTime - processor.currentProgress), 1)}s left)</p>
                                     ` : `
-                                    <button data-action="startProcessing" data-processorid="${procId}" class="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-1.5 px-2 rounded-md transform hover:scale-105 transition-transform text-sm ${processor.isActive ? 'opacity-50 cursor-not-allowed' : ''}" ${processor.isActive ? 'disabled' : ''}>
+                                    <button data-action="startProcessing" data-processorid="${procId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm ${processor.isActive ? 'opacity-50 cursor-not-allowed' : ''}" ${processor.isActive ? 'disabled' : ''}>
                                         Process Batch
                                     </button>
                                     `}
                                 </div>
-                                <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600">
-                                    <p class="text-xs text-slate-300 mb-1">Speed Lvl: ${processor.speedLevel} | Efficiency Lvl: ${processor.efficiencyLevel}</p>
+                                <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-1.5">
+                                    <p class="text-xs text-slate-200 mb-1">Speed Lvl: ${processor.speedLevel} | Efficiency Lvl: ${processor.efficiencyLevel}</p>
                                     <div class="flex space-x-2">
-                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="speed" class="flex-1 text-xs bg-green-500 hover:bg-green-600 text-white py-1 px-1.5 rounded-md transform hover:scale-105 transition-transform">Speed ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'speed'))})</button>
-                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="efficiency" class="flex-1 text-xs bg-teal-500 hover:bg-teal-600 text-white py-1 px-1.5 rounded-md transform hover:scale-105 transition-transform">Efficiency ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'efficiency'))})</button>
+                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="speed" class="flex-1 text-xs bg-green-600 hover:bg-green-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Speed ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'speed'))})</button>
+                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="efficiency" class="flex-1 text-xs bg-teal-600 hover:bg-teal-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Efficiency ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'efficiency'))})</button>
                                     </div>
                                 </div>
                             `;
@@ -1860,23 +1842,23 @@
                     marketContainer.innerHTML = '';
                     Object.values(this.state.resources).filter(res => res.unlocked && res.value > 0).sort((a,b) => a.name.localeCompare(b.name)).forEach(res => {
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
                         const currentPrice = res.value * this.state.globalUpgrades.sellMultiplier.value * heavenlyBonusMultiplier;
                         card.innerHTML = `
                             <div class="flex-grow">
                                 <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${res.name}</h3>
-                                <p class="text-sm text-slate-300">In Stock: ${this.formatNumber(res.count)}</p>
-                                <p class="text-xs text-slate-400 mb-2">Sell Price: $${this.formatNumber(currentPrice, 2)}/unit</p>
-                                <input type="number" id="sell-amount-${res.id}" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-md p-2 w-full mb-2 focus:ring-sky-500 focus:border-sky-500" placeholder="Qty to sell" min="1" max="${Math.floor(res.count)}">
+                                <p class="text-sm text-slate-200">In Stock: ${this.formatNumber(res.count)}</p>
+                                <p class="text-xs text-slate-300 mb-2">Sell Price: $${this.formatNumber(currentPrice, 2)}/unit</p>
+                                <input type="number" id="sell-amount-${res.id}" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-md p-2 w-full mb-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty to sell" min="1" max="${Math.floor(res.count)}">
                             </div>
-                            <div class="mt-auto space-y-1">
+                            <div class="mt-auto space-y-1.5 pt-2">
                                 <div class="flex space-x-1">
-                                    ${res.count >= 1 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="1" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 1</button>` : ''}
-                                    ${res.count >= 10 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="10" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 10</button>` : ''}
-                                    ${res.count >= 100 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="100" class="flex-1 text-xs bg-sky-600 hover:bg-sky-700 text-white py-1 px-1.5 rounded-md">Sell 100</button>` : ''}
+                                    ${res.count >= 1 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="1" class="flex-1 text-xs bg-sky-700 hover:bg-sky-600 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Sell 1</button>` : ''}
+                                    ${res.count >= 10 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="10" class="flex-1 text-xs bg-sky-700 hover:bg-sky-600 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Sell 10</button>` : ''}
+                                    ${res.count >= 100 ? `<button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="100" class="flex-1 text-xs bg-sky-700 hover:bg-sky-600 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Sell 100</button>` : ''}
                                 </div>
-                                <button data-action="sellResourceCustom" data-resourceid="${res.id}" class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 rounded-md text-sm">Sell Custom</button>
-                                <button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="${res.count}" class="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-medium py-1.5 px-2 rounded-md text-sm">Sell All (${this.formatNumber(res.count)})</button>
+                                <button data-action="sellResourceCustom" data-resourceid="${res.id}" class="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Sell Custom</button>
+                                <button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="${res.count}" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Sell All (${this.formatNumber(res.count)})</button>
                             </div>
                         `;
                         marketContainer.appendChild(card);
@@ -1889,7 +1871,7 @@
                     for (const researchId in this.state.research) {
                         const item = this.state.research[researchId];
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
                         
                         let costHtml = `Cost: $${this.formatNumber(item.cost.money)}`;
                         if (item.cost.resources) {
@@ -1914,16 +1896,16 @@
                         } else if (item.isResearching) {
                             const progressPercent = (item.currentProgress / actualResearchTime) * 100;
                             buttonHtml = `
-                                <div class="w-full bg-slate-600 rounded-full h-4 my-2">
-                                    <div class="bg-sky-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: ${progressPercent}%">${Math.floor(progressPercent)}%</div>
+                                <div class="w-full bg-slate-600 rounded-full h-4 my-2 overflow-hidden">
+                                    <div class="bg-sky-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none transition-all duration-200 ease-linear" style="width: ${progressPercent}%">${Math.floor(progressPercent)}%</div>
                                 </div>
                                 <p class="text-xs text-center text-sky-300">Researching... (${this.formatNumber(actualResearchTime - item.currentProgress, 0)}s left)</p>
                             `;
                         } else if (!prerequisiteMet) {
-                             buttonHtml = `<button class="mt-2 w-full bg-slate-500 text-slate-400 font-medium py-1.5 px-2 rounded-md text-sm cursor-not-allowed" disabled>Start Research</button>`;
+                             buttonHtml = `<button class="mt-2 w-full bg-slate-500 text-slate-400 font-medium py-2 px-4 rounded-md text-sm cursor-not-allowed" disabled>Start Research</button>`;
                         }
                         else {
-                            buttonHtml = `<button data-action="startResearch" data-researchid="${researchId}" class="mt-2 w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-1.5 px-2 rounded-md transform hover:scale-105 transition-transform text-sm">Start Research</button>`;
+                            buttonHtml = `<button data-action="startResearch" data-researchid="${researchId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Start Research</button>`;
                         }
 
                         card.innerHTML = `
@@ -1969,7 +1951,7 @@
                         }).forEach(ach => {
                             const achState = this.state.achievements[ach.id];
                             const card = document.createElement('div');
-                            card.className = `p-3 sm:p-4 rounded-lg shadow-lg flex flex-col ${achState?.unlocked ? 'bg-green-600 border-2 border-green-400' : 'bg-slate-700 opacity-90'}`; 
+                            card.className = `p-3 sm:p-4 rounded-lg shadow-xl flex flex-col transition-all duration-200 ${achState?.unlocked ? 'bg-green-600/90 border-2 border-green-400 transform scale-105' : 'bg-slate-700/80 backdrop-blur-sm opacity-90'}`; 
                             card.innerHTML = `
                                 <div class="flex-grow">
                                     <h4 class="text-base sm:text-lg font-semibold ${achState?.unlocked ? 'text-yellow-200' : 'text-yellow-400'}">${ach.name}</h4>
@@ -1998,26 +1980,26 @@
                         totalPortfolioValue += currentAssetValue;
 
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col';
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
                         card.innerHTML = `
                             <div class="flex-grow">
                                 <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${assetDef.name}</h3>
-                                <p class="text-xl sm:text-2xl my-1 sm:my-2">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow || '&#8212;'}</p>
-                                <p class="text-xs sm:text-sm text-slate-400">Last: $${this.formatNumber(marketData.lastPrice, 2)}</p>
+                                <p class="text-xl sm:text-2xl my-1 sm:my-2 text-white">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow || '&#8212;'}</p>
+                                <p class="text-xs sm:text-sm text-slate-300">Last: $${this.formatNumber(marketData.lastPrice, 2)}</p>
                                 <hr class="my-2 sm:my-3 border-slate-600">
-                                <p class="text-base sm:text-lg font-medium">Your Portfolio:</p>
-                                <p class="text-xs sm:text-sm">Shares: ${this.formatNumber(portfolioData.shares)}</p>
-                                <p class="text-xs sm:text-sm">Avg. Buy: $${this.formatNumber(portfolioData.avgBuyPrice, 2)}</p>
-                                <p class="text-xs sm:text-sm">Value: $${this.formatNumber(currentAssetValue, 2)}</p>
+                                <p class="text-base sm:text-lg font-medium text-sky-300">Your Portfolio:</p>
+                                <p class="text-xs sm:text-sm text-slate-200">Shares: ${this.formatNumber(portfolioData.shares)}</p>
+                                <p class="text-xs sm:text-sm text-slate-200">Avg. Buy: $${this.formatNumber(portfolioData.avgBuyPrice, 2)}</p>
+                                <p class="text-xs sm:text-sm text-slate-200">Value: $${this.formatNumber(currentAssetValue, 2)}</p>
                             </div>
-                            <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600">
-                                <div class="flex space-x-2 mb-2">
-                                    <input type="number" id="buy-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-1.5 sm:p-2 w-full focus:ring-sky-500 focus:border-sky-500" placeholder="Qty" min="1">
-                                    <button data-action="buyShares" data-assetid="${assetId}" class="bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-3 rounded-md transform hover:scale-105 transition-transform text-xs sm:text-sm">Buy</button>
+                            <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-2">
+                                <div class="flex space-x-2">
+                                    <input type="number" id="buy-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1">
+                                    <button data-action="buyShares" data-assetid="${assetId}" class="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Buy</button>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <input type="number" id="sell-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-1.5 sm:p-2 w-full focus:ring-sky-500 focus:border-sky-500" placeholder="Qty" min="1">
-                                    <button data-action="sellShares" data-assetid="${assetId}" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-3 rounded-md transform hover:scale-105 transition-transform text-xs sm:text-sm">Sell</button>
+                                    <input type="number" id="sell-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1">
+                                    <button data-action="sellShares" data-assetid="${assetId}" class="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Sell</button>
                                 </div>
                             </div>
                         `;
@@ -2048,7 +2030,6 @@
                     }
                 }
 
-                // Render Prestige Tab
                 const prestigeTabContent = document.getElementById('prestige-tab-content');
                 if (prestigeTabContent) {
                     const prestige = this.state.prestige;
@@ -2056,12 +2037,12 @@
                     const ppToGain = this.calculatePrestigePointsToGain();
                     const canPrestigeNow = this.canPrestige();
                     let prestigeInfoHtml = `
-                        <p class="text-lg text-center mb-2">Prestige Points (PP): <span class="font-bold text-yellow-400">${this.formatNumber(prestige.points)}</span></p>
-                        <p class="text-sm text-center mb-1">Total PP Earned: ${this.formatNumber(prestige.totalPointsEverEarned)}</p>
-                        <p class="text-sm text-center mb-4">Prestiges Done: ${this.formatNumber(prestige.prestigesDone)}</p>
-                        <div class="text-center mb-6">
-                            <p class="text-md mb-2">On next Prestige, you will gain: <span class="font-bold text-xl ${ppToGain > 0 ? 'text-green-400' : 'text-slate-400'}">${this.formatNumber(ppToGain)} PP</span></p>
-                            <button data-action="performPrestige" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg text-lg transform hover:scale-105 transition-transform ${!canPrestigeNow ? 'opacity-50 cursor-not-allowed' : ''}" ${!canPrestigeNow ? 'disabled' : ''}>
+                        <p class="text-lg text-center mb-2">Prestige Points (PP): <span class="font-bold text-yellow-300">${this.formatNumber(prestige.points)}</span></p>
+                        <p class="text-sm text-center mb-1 text-slate-300">Total PP Earned: ${this.formatNumber(prestige.totalPointsEverEarned)}</p>
+                        <p class="text-sm text-center mb-4 text-slate-300">Prestiges Done: ${this.formatNumber(prestige.prestigesDone)}</p>
+                        <div class="text-center mb-6 p-4 bg-slate-800/50 rounded-lg">
+                            <p class="text-md mb-2 text-slate-100">On next Prestige, you will gain: <span class="font-bold text-xl ${ppToGain > 0 ? 'text-green-400' : 'text-slate-400'}">${this.formatNumber(ppToGain)} PP</span></p>
+                            <button data-action="performPrestige" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg text-lg transform hover:scale-105 active:scale-95 transition-all ${!canPrestigeNow ? 'opacity-50 cursor-not-allowed' : ''}" ${!canPrestigeNow ? 'disabled' : ''}>
                                 Perform Prestige
                             </button>
                             ${!canPrestigeNow && totalMoneyEver < prestige.minMoneyForPrestige ? `<p class="text-xs text-red-400 mt-1">Reach $${this.formatNumber(prestige.minMoneyForPrestige)} total earnings to unlock Prestige.</p>` : ''}
@@ -2074,11 +2055,11 @@
                         const upgrade = prestige.upgrades[upgKey];
                         const cost = this.getPrestigeUpgradeCost(upgKey);
                         prestigeInfoHtml += `
-                            <div class="bg-slate-800 p-4 rounded-lg shadow-md">
-                                <h4 class="text-lg font-semibold text-yellow-500">${upgrade.name} <span class="text-sm text-slate-400">(Lvl ${upgrade.level})</span></h4>
+                            <div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-md hover:bg-slate-700/90 transition-colors duration-150">
+                                <h4 class="text-lg font-semibold text-yellow-400">${upgrade.name} <span class="text-sm text-slate-400">(Lvl ${upgrade.level})</span></h4>
                                 <p class="text-xs text-slate-300 my-1">${upgrade.description}</p>
-                                <p class="text-sm text-sky-400">Cost: ${this.formatNumber(cost)} PP</p>
-                                <button data-action="buyPrestigeUpgrade" data-upgradekey="${upgKey}" class="mt-2 w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-3 rounded-md text-sm ${prestige.points < cost ? 'opacity-50 cursor-not-allowed' : 'transform hover:scale-105 transition-transform'}" ${prestige.points < cost ? 'disabled' : ''}>
+                                <p class="text-sm text-sky-300">Cost: ${this.formatNumber(cost)} PP</p>
+                                <button data-action="buyPrestigeUpgrade" data-upgradekey="${upgKey}" class="mt-2 w-full bg-green-600 hover:bg-green-500 text-white font-medium py-1.5 px-3 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all text-sm ${prestige.points < cost ? 'opacity-50 cursor-not-allowed' : ''}" ${prestige.points < cost ? 'disabled' : ''}>
                                     Upgrade
                                 </button>
                             </div>`;
@@ -2087,25 +2068,24 @@
                     prestigeTabContent.innerHTML = prestigeInfoHtml;
                 }
 
-                // Render Stats Tab
                 const statsTabContent = document.getElementById('stats-tab-content');
                 if (statsTabContent && this.state.stats) {
                     const stats = this.state.stats;
-                    let statsHtml = `<div class="space-y-6">`;
+                    let statsHtml = `<div class="space-y-4 text-slate-200">`;
 
-                    // General Stats
-                    statsHtml += `<div class="bg-slate-800 p-4 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-sky-400 mb-3">General Stats</h3>
-                        <p>Total Manual Clicks: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalManualClicks)}</span></p>
-                        <p>Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.currentRunMoneyEarned, 2)}</span></p>
-                        <p>Highest Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.highestMoneyThisPrestige, 2)}</span></p>
-                        <p>All-Time Highest Money: <span class="font-medium text-amber-400">$${this.formatNumber(stats.allTimeHighestMoney, 2)}</span></p>
-                        <p>Total Time Played: <span class="font-medium text-yellow-300">${this.formatTime(stats.totalTimePlayedSeconds)}</span></p>
+                    statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">General Stats</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <p>Total Manual Clicks: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalManualClicks)}</span></p>
+                            <p>Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.currentRunMoneyEarned, 2)}</span></p>
+                            <p>Highest Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.highestMoneyThisPrestige, 2)}</span></p>
+                            <p>All-Time Highest Money: <span class="font-medium text-amber-400">$${this.formatNumber(stats.allTimeHighestMoney, 2)}</span></p>
+                            <p>Total Time Played: <span class="font-medium text-yellow-300">${this.formatTime(stats.totalTimePlayedSeconds)}</span></p>
+                        </div>
                     </div>`;
                     
-                    // Mining Stats
-                    let miningStatsHtml = `<div class="bg-slate-800 p-4 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-sky-400 mb-3">Mining Totals</h3><div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">`;
+                    let miningStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Mining Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
                     let hasMinedStats = false;
                     Object.keys(stats.totalResourcesMined || {}).sort((a,b) => this.state.resources[a].name.localeCompare(this.state.resources[b].name)).forEach(resId => {
                         if (this.state.resources[resId]) {
@@ -2113,29 +2093,29 @@
                             hasMinedStats = true;
                         }
                     });
-                    if (!hasMinedStats) miningStatsHtml += `<p class="col-span-2 text-slate-400 italic">No resources mined yet.</p>`;
+                    if (!hasMinedStats) miningStatsHtml += `<p class="col-span-full text-slate-400 italic">No resources mined yet.</p>`;
                     miningStatsHtml += `</div></div>`;
                     statsHtml += miningStatsHtml;
 
-                    // Processing Stats
-                    let processingStatsHtml = `<div class="bg-slate-800 p-4 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-sky-400 mb-3">Processing Totals</h3><div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">`;
+                    let processingStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Processing Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
                     let hasProcessedStats = false;
                     Object.keys(stats.totalItemsProcessed || {}).sort((a,b) => this.state.resources[a].name.localeCompare(this.state.resources[b].name)).forEach(resId => {
-                         if (this.state.resources[resId]) { // Ensure resource definition exists
+                         if (this.state.resources[resId]) { 
                             processingStatsHtml += `<div>${this.state.resources[resId].name}: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalItemsProcessed[resId] || 0)}</span></div>`;
                             hasProcessedStats = true;
                         }
                     });
-                    if (!hasProcessedStats) processingStatsHtml += `<p class="col-span-2 text-slate-400 italic">No items processed yet.</p>`;
+                    if (!hasProcessedStats) processingStatsHtml += `<p class="col-span-full text-slate-400 italic">No items processed yet.</p>`;
                     processingStatsHtml += `</div></div>`;
                     statsHtml += processingStatsHtml;
 
-                    // Prestige Stats
-                    statsHtml += `<div class="bg-slate-800 p-4 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-sky-400 mb-3">Prestige Stats</h3>
-                        <p>Total Prestige Points Earned: <span class="font-medium text-purple-400">${this.formatNumber(stats.prestige?.totalPointsEverEarned || this.state.prestige.totalPointsEverEarned)}</span></p>
-                        <p>Prestiges Performed: <span class="font-medium text-purple-400">${this.formatNumber(stats.prestige?.prestigesDone || this.state.prestige.prestigesDone)}</span></p>
+                    statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Prestige Stats</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <p>Total PP Earned: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.totalPointsEverEarned)}</span></p>
+                            <p>Prestiges Performed: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.prestigesDone)}</span></p>
+                        </div>
                     </div>`;
 
                     statsHtml += `</div>`;
@@ -2155,12 +2135,14 @@
 
 
                 document.querySelectorAll('button[data-tab]').forEach(tabButton => {
-                    tabButton.classList.toggle('bg-sky-600', tabButton.dataset.tab === this.state.currentTab); 
-                    tabButton.classList.toggle('text-white', tabButton.dataset.tab === this.state.currentTab);
-                    tabButton.classList.toggle('bg-sky-800', tabButton.dataset.tab !== this.state.currentTab); 
-                    tabButton.classList.toggle('text-sky-200', tabButton.dataset.tab !== this.state.currentTab); 
-                    tabButton.classList.toggle('hover:bg-sky-500', tabButton.dataset.tab !== this.state.currentTab); 
-                    tabButton.classList.toggle('hover:bg-sky-600', tabButton.dataset.tab === this.state.currentTab); 
+                    const isCurrentTab = tabButton.dataset.tab === this.state.currentTab;
+                    tabButton.classList.toggle('bg-sky-600', isCurrentTab); 
+                    tabButton.classList.toggle('text-white', isCurrentTab);
+                    tabButton.classList.toggle('shadow-inner-lg', isCurrentTab);
+                    tabButton.classList.toggle('bg-sky-800', !isCurrentTab); 
+                    tabButton.classList.toggle('text-sky-200', !isCurrentTab); 
+                    tabButton.classList.toggle('hover:bg-sky-500', !isCurrentTab); 
+                    tabButton.classList.toggle('hover:bg-sky-600', isCurrentTab); 
                 });
             },
             
@@ -2183,9 +2165,9 @@
                 return `
                     <div class="flex-grow">
                         <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${item.name} (Locked)</h3>
-                        <p class="text-xs sm:text-sm text-slate-400 my-1 sm:my-2">${requirementsText}</p>
+                        <p class="text-xs sm:text-sm text-slate-300 my-1 sm:my-2">${requirementsText}</p>
                     </div>
-                    <button data-action="unlockItem" data-itemid="${item.id}" data-itemtype="${itemType}" class="mt-auto w-full bg-green-500 hover:bg-green-600 text-white font-medium py-1.5 px-2 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm">Unlock ${item.name}</button>`;
+                    <button data-action="unlockItem" data-itemid="${item.id}" data-itemtype="${itemType}" class="mt-auto w-full bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Unlock ${item.name}</button>`;
             },
 
             createLockedCardInnerHtml(item, itemType = 'resource', prerequisiteText = '') { 
@@ -2312,10 +2294,10 @@
 
                 let timeString = "";
                 if (days > 0) timeString += `${days}d `;
-                if (hours > 0 || days > 0) timeString += `${hours}h `; // Show hours if days are shown
-                if (minutes > 0 || hours > 0 || days > 0) timeString += `${minutes}m `; // Show minutes if hours/days are shown
+                if (hours > 0 || days > 0) timeString += `${hours}h `; 
+                if (minutes > 0 || hours > 0 || days > 0) timeString += `${minutes}m `; 
                 timeString += `${seconds}s`;
-                return timeString.trim();
+                return timeString.trim() || "0s"; // Ensure "0s" if all are zero
             },
 
             formatNumber(num, precision = 0) {
@@ -2326,12 +2308,12 @@
                 if (Math.abs(numFloat) < 1e-9 && numFloat !== 0) return numFloat.toExponential(precision); 
                 
                 const tiers = [
-                    { value: 1e18, symbol: "Qi" }, // Quintillion
-                    { value: 1e15, symbol: "Qa" }, // Quadrillion
-                    { value: 1e12, symbol: "T" },  // Trillion
-                    { value: 1e9, symbol: "B" },   // Billion
-                    { value: 1e6, symbol: "M" },   // Million
-                    { value: 1e3, symbol: "k" }    // Thousand
+                    { value: 1e18, symbol: "Qi" }, 
+                    { value: 1e15, symbol: "Qa" }, 
+                    { value: 1e12, symbol: "T" },  
+                    { value: 1e9, symbol: "B" },   
+                    { value: 1e6, symbol: "M" },   
+                    { value: 1e3, symbol: "k" }    
                 ];
 
                 for (let i = 0; i < tiers.length; i++) {
@@ -2356,17 +2338,18 @@
                 }
 
                 toastMessage.innerHTML = message; 
-                toast.classList.remove('hidden', 'bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-purple-500');
+                toast.classList.remove('hidden', 'bg-red-600', 'bg-green-600', 'bg-sky-600', 'bg-purple-600', 'border-red-500', 'border-green-500', 'border-sky-500', 'border-purple-500');
+                toast.classList.add('border-2', 'p-4', 'text-sm'); // Standard padding and text size
                 
-                let bgColor = 'bg-green-500'; 
+                let bgColor = 'bg-green-600 border-green-500'; 
                 if (isError) {
-                    bgColor = 'bg-red-500';
+                    bgColor = 'bg-red-600 border-red-500';
                 } else if (message.toLowerCase().includes('welcome back') || message.toLowerCase().includes('research complete') || message.toLowerCase().includes('daily login')) { 
-                    bgColor = 'bg-blue-500';
+                    bgColor = 'bg-sky-600 border-sky-500';
                 } else if (message.toLowerCase().includes('prestiged!')) {
-                    bgColor = 'bg-purple-500';
+                    bgColor = 'bg-purple-600 border-purple-500';
                 }
-                toast.classList.add(bgColor);
+                toast.classList.add(...bgColor.split(' '));
                 
                 const timeoutId = setTimeout(() => { 
                     toast.classList.add('hidden'); 
@@ -2423,21 +2406,75 @@
         });
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .tab-button { transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, color 0.2s ease-in-out; }
-        .tab-button:hover { transform: translateY(-1px); }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-image: linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a); /* Subtle gradient slate-900 to slate-800 */
+        }
+        .tab-button { 
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; 
+            will-change: transform; /* Optimize for transform animations */
+        }
+        .tab-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 191, 255, 0.2); }
         .tab-button.bg-sky-600 { 
-            box-shadow: inset 0 -2px 0 0 #0284c7; 
+            box-shadow: inset 0 -3px 0 0 #0284c7, 0 2px 8px rgba(2, 132, 199, 0.3); /* Tailwind sky-600 */
         }
         .grid { align-items: stretch; } 
         .grid > div { display: flex; flex-direction: column; } 
         .grid > div > div:first-child { flex-grow: 1; } 
-        #achievements-container, #processors-container, #market-container, #research-container, #prestige-upgrades-container, #stats-tab-content > div { max-height: 70vh; overflow-y: auto; padding-right: 8px; /* Space for scrollbar */} 
+        #achievements-container, #processors-container, #market-container, #research-container, #prestige-upgrades-container, #stats-tab-content > div { 
+            max-height: 70vh; 
+            overflow-y: auto; 
+            padding-right: 10px; /* Space for scrollbar */
+            scrollbar-width: thin; /* For Firefox */
+            scrollbar-color: #38bdf8 #1e293b; /* thumb track - sky-400 slate-800 */
+        } 
         
-        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 10px;}
-        ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px;}
+        ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 10px; border: 2px solid #1e293b;}
         ::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+
+        /* Card hover effect */
+        .card-hover-effect {
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+        .card-hover-effect:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 0 15px rgba(56, 189, 248, 0.3); /* sky-400 glow */
+        }
+        .unlockable-card-glow:hover {
+             box-shadow: 0 0 15px rgba(74, 222, 128, 0.5); /* green-400 glow */
+        }
+        
+        /* Progress bar animation */
+        .animated-progress-bar > div {
+            transition: width 0.3s ease-in-out !important;
+        }
+         .animated-progress-bar > div::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background-image: linear-gradient(
+                -45deg, 
+                rgba(255,255,255,.1) 25%, 
+                transparent 25%, 
+                transparent 50%, 
+                rgba(255,255,255,.1) 50%, 
+                rgba(255,255,255,.1) 75%, 
+                transparent 75%, 
+                transparent
+            );
+            z-index: 1;
+            background-size: 30px 30px;
+            animation: move 2s linear infinite;
+            border-radius: 9999px; /* Tailwind rounded-full */
+            overflow: hidden;
+        }
+        @keyframes move {
+            0% { background-position: 0 0; }
+            100% { background-position: 30px 30px; }
+        }
+
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-2 sm:p-4 selection:bg-sky-500 selection:text-white">
@@ -2447,32 +2484,32 @@
     </div>
 
     <header class="w-full max-w-7xl mb-4 sm:mb-6 text-center pt-2 sm:pt-4">
-        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-sky-400">Mine Tycoon</h1>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-sky-400 tracking-tight">Mine Tycoon</h1>
         <p id="money-display" class="text-2xl sm:text-3xl md:text-4xl font-semibold text-green-400 mt-1 sm:mt-2 mb-2 sm:mb-3">$0.00</p>
-        <button data-action="sellAllResources" class="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-bold py-2 px-4 sm:py-2.5 sm:px-8 rounded-lg shadow-md transition-all duration-150 ease-in-out transform hover:scale-105 text-sm sm:text-base">
+        <button data-action="sellAllResources" class="bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-slate-900 font-bold py-2.5 px-8 rounded-lg shadow-lg hover:shadow-yellow-500/50 transition-all duration-150 ease-in-out transform hover:scale-105 active:scale-100 text-sm sm:text-base">
             Sell All (Quick Sell)
         </button>
     </header>
 
-    <nav class="w-full max-w-7xl mb-6 sm:mb-8 sticky top-0 z-40 bg-slate-900 py-2 shadow-sm">
-        <div class="flex flex-col items-center bg-slate-800 p-1 sm:p-1.5 rounded-lg shadow-lg">
+    <nav class="w-full max-w-7xl mb-6 sm:mb-8 sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md py-2 shadow-xl rounded-b-xl">
+        <div class="flex flex-col items-center bg-slate-800/70 p-1 sm:p-1.5 rounded-lg shadow-lg">
             <div class="flex justify-center space-x-1 sm:space-x-2 w-full mb-1 sm:mb-1.5">
-                <button data-tab="mines" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Mines</button>
-                <button data-tab="upgrades" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Upgrades</button>
-                <button data-tab="investments" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Invest</button>
+                <button data-tab="mines" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Mines</button>
+                <button data-tab="upgrades" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Upgrades</button>
+                <button data-tab="investments" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Invest</button>
             </div>
             <div class="flex justify-center space-x-1 sm:space-x-2 w-full mb-1 sm:mb-1.5">
-                <button data-tab="process" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Process</button>
-                <button data-tab="market" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Market</button>
-                <button data-tab="research" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Research</button>
+                <button data-tab="process" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Process</button>
+                <button data-tab="market" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Market</button>
+                <button data-tab="research" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Research</button>
             </div>
             <div class="flex justify-center space-x-1 sm:space-x-2 w-full mb-1 sm:mb-1.5">
-                 <button data-tab="prestige" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Prestige</button>
-                 <button data-tab="achievements" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Achieve</button>
-                 <button data-tab="stats" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Stats</button>
+                 <button data-tab="prestige" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Prestige</button>
+                 <button data-tab="achievements" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Achieve</button>
+                 <button data-tab="stats" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Stats</button>
             </div>
              <div class="flex justify-center space-x-1 sm:space-x-2 w-full">
-                <button data-tab="settings" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Settings</button>
+                <button data-tab="settings" class="tab-button flex-1 py-2 px-2 sm:py-2.5 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Settings</button>
             </div>
         </div>
     </nav>
@@ -2491,7 +2528,7 @@
 
         <div id="investments-tab-content" class="hidden">
             <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-sky-300 text-center">Investment Market</h2>
-            <div id="portfolio-summary" class="bg-slate-800 p-3 sm:p-4 rounded-lg shadow-md mb-4 sm:mb-6 text-center text-xs sm:text-sm">
+            <div id="portfolio-summary" class="bg-slate-800/70 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-xl mb-4 sm:mb-6 text-center text-xs sm:text-sm">
             </div>
             <div id="investments-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             </div>
@@ -2531,51 +2568,51 @@
         
         <div id="settings-tab-content" class="hidden"> 
             <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-sky-300 text-center">Game Settings</h2>
-            <div class="max-w-md mx-auto bg-slate-800 p-4 sm:p-6 rounded-lg shadow-xl">
+            <div class="max-w-md mx-auto bg-slate-800/70 backdrop-blur-sm p-4 sm:p-6 rounded-lg shadow-xl">
                 <div class="mb-6">
                     <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Download Save File</h3>
-                    <p class="text-xs sm:text-sm text-slate-400 mb-3">Download your current game progress as a JSON file. This can be used for backups or transferring saves.</p>
-                    <button data-action="downloadSave" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 ease-in-out transform hover:scale-105 text-sm sm:text-base">
+                    <p class="text-xs sm:text-sm text-slate-300 mb-3">Download your current game progress as a JSON file. This can be used for backups or transferring saves.</p>
+                    <button data-action="downloadSave" class="w-full bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-sky-500/50 transition-all duration-150 ease-in-out transform hover:scale-105 active:scale-100 text-sm sm:text-base">
                         Download Save
                     </button>
                 </div>
                 <div class="mb-6 pt-6 border-t border-slate-700">
                     <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Load Save File</h3>
-                    <p class="text-xs sm:text-sm text-slate-400 mb-3">Load your game progress from a previously downloaded JSON file. This will overwrite your current game state in this browser session and attempt to sync with the cloud if logged in.</p>
-                    <input type="file" id="load-save-input" accept=".json" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-600 cursor-pointer"/>
+                    <p class="text-xs sm:text-sm text-slate-300 mb-3">Load your game progress from a previously downloaded JSON file. This will overwrite your current game state in this browser session and attempt to sync with the cloud if logged in.</p>
+                    <input type="file" id="load-save-input" accept=".json" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500"/>
                 </div>
                 <div class="mb-6 pt-6 border-t border-slate-700">
                     <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Reset Game</h3>
-                    <p class="text-xs sm:text-sm text-slate-400 mb-3">Warning: This will erase all your current progress, including money, resources, upgrades, achievements, and Prestige. This action cannot be undone.</p>
-                    <button data-action="resetGame" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-150 ease-in-out transform hover:scale-105 text-sm sm:text-base">
+                    <p class="text-xs sm:text-sm text-slate-300 mb-3">Warning: This will erase all your current progress, including money, resources, upgrades, achievements, and Prestige. This action cannot be undone.</p>
+                    <button data-action="resetGame" class="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-red-500/50 transition-all duration-150 ease-in-out transform hover:scale-105 active:scale-100 text-sm sm:text-base">
                         Reset All Progress
                     </button>
                 </div>
                  <div class="mt-6 pt-4 border-t border-slate-700">
-                    <p class="text-xs text-slate-500 text-center">Player ID: <span id="user-id-display-settings" class="font-mono">Loading...</span></p>
+                    <p class="text-xs text-slate-400 text-center">Player ID: <span id="user-id-display-settings" class="font-mono">Loading...</span></p>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <div id="toast-notification" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 p-3 sm:p-4 rounded-lg text-white shadow-xl hidden transition-all duration-300 ease-in-out z-[150] text-xs sm:text-sm max-w-xs sm:max-w-sm break-words">
-        <p id="toast-message"></p>
+    <div id="toast-notification" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 p-3 sm:p-4 rounded-lg text-white shadow-2xl hidden transition-all duration-300 ease-in-out z-[150] text-sm max-w-sm break-words border-2">
+        <p id="toast-message" class="leading-relaxed"></p>
     </div>
 
-    <div id="confirmation-modal" class="fixed inset-0 bg-slate-900 bg-opacity-80 flex items-center justify-center p-4 hidden z-[200]">
-        <div class="bg-slate-800 p-4 sm:p-6 rounded-lg shadow-2xl max-w-xs sm:max-w-sm w-full border border-slate-700">
-            <h3 id="modal-title" class="text-lg sm:text-xl font-semibold text-sky-400 mb-3 sm:mb-4">Confirm Action</h3>
-            <p id="modal-message" class="text-sm sm:text-base text-slate-300 mb-4 sm:mb-6">Are you sure?</p>
-            <div class="flex justify-end space-x-2 sm:space-x-3">
-                <button id="modal-cancel" class="bg-slate-600 hover:bg-slate-500 text-slate-100 font-medium py-1.5 px-3 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm sm:text-base">Cancel</button>
-                <button id="modal-confirm" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-3 sm:py-2 sm:px-4 rounded-md transform hover:scale-105 transition-transform text-sm sm:text-base">Confirm</button>
+    <div id="confirmation-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 hidden z-[200]">
+        <div class="bg-slate-800 p-6 rounded-xl shadow-2xl max-w-md w-full border border-slate-700">
+            <h3 id="modal-title" class="text-xl font-semibold text-sky-300 mb-4">Confirm Action</h3>
+            <div id="modal-message" class="text-sm text-slate-200 mb-6 leading-relaxed">Are you sure?</div>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-cancel" class="bg-slate-600 hover:bg-slate-500 active:bg-slate-700 text-slate-100 font-medium py-2 px-4 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all text-sm">Cancel</button>
+                <button id="modal-confirm" class="bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-medium py-2 px-4 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all text-sm">Confirm</button>
             </div>
         </div>
     </div>
 
-    <footer class="w-full max-w-7xl mt-8 sm:mt-12 py-4 sm:py-6 text-center text-xs sm:text-sm text-slate-500 border-t border-slate-700">
-        Mine Tycoon &copy; 2024-2025. Advanced Content Update.
+    <footer class="w-full max-w-7xl mt-8 sm:mt-12 py-4 sm:py-6 text-center text-xs sm:text-sm text-slate-500 border-t border-slate-700/50">
+        Mine Tycoon &copy; 2024-2025. Advanced Content & UI Update.
     </footer>
 
 </body>
