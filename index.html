@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mine Tycoon</title>
+    <title>Mine Tycoon - Upgraded</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script type="module">
@@ -50,7 +50,7 @@
                                 userId = user.uid;
                                 console.log("User is signed in with UID:", userId);
                                 isAuthReady = true;
-                                await this.loadGame();
+                                await this.loadGame(); 
                             } else {
                                 console.log("User is not signed in. Attempting sign-in.");
                                 try {
@@ -67,12 +67,12 @@
                                     document.getElementById('loading-message').classList.add('hidden');
                                 }
                             }
-                            // User ID display was in settings, now removed from UI. Still logged.
                         });
                     } else {
                         console.warn("Firebase config is empty. Game will run in offline mode without saving.");
                         isAuthReady = true; 
                         this.resetState(); 
+                        this.calculateOfflineProgression(Date.now()); 
                         this.render();
                         document.getElementById('loading-message').classList.add('hidden');
                     }
@@ -80,6 +80,7 @@
                     console.error("Firebase initialization failed:", error);
                     isAuthReady = true; 
                     this.resetState(); 
+                    this.calculateOfflineProgression(Date.now()); 
                     this.render();
                     document.getElementById('loading-message').classList.add('hidden');
                 }
@@ -87,7 +88,7 @@
                 this.setupEventListeners();
                 this.startMarketUpdates(); 
                 setInterval(() => this.update(), 1000); 
-                setInterval(() => this.autoSaveGame(), 30000); // Auto-save every 30 seconds
+                setInterval(() => this.autoSaveGame(), 30000); 
             },
 
             getAchievementDefinitions() {
@@ -101,12 +102,17 @@
                     mine_100_gold: { name: "Gold Hoarder", description: "Mine 100 Gold.", category: "Mining", condition: () => this.state.resources.gold.count >= 100 },
                     mine_10_diamond: { name: "Diamond King", description: "Mine 10 Diamond.", category: "Mining", condition: () => this.state.resources.diamond.count >= 10 },
                     mine_obsidian_master: { name: "Obsidian Carver", description: "Mine 1,000 Obsidian.", category: "Mining", condition: () => this.state.resources.obsidian.count >= 1000 },
+                    mine_mythril_adept: { name: "Mythril Adept", description: "Mine 500 Mythril.", category: "Mining", condition: () => this.state.resources.mythril?.count >= 500 },
+                    mine_orichalcum_lord: { name: "Orichalcum Lord", description: "Mine 100 Orichalcum.", category: "Mining", condition: () => this.state.resources.orichalcum?.count >= 100 },
+
 
                     // Wealth Milestones
                     wealth_1k: { name: "Pocket Change", description: "Earn $1,000 total.", category: "Wealth", condition: () => this.state.money >= 1000 },
                     wealth_100k: { name: "Well Off", description: "Earn $100,000 total.", category: "Wealth", condition: () => this.state.money >= 100000 },
                     wealth_1m: { name: "Millionaire", description: "Earn $1,000,000 total.", category: "Wealth", condition: () => this.state.money >= 1000000 },
                     wealth_1b: { name: "Billionaire", description: "Earn $1,000,000,000 total.", category: "Wealth", condition: () => this.state.money >= 1000000000 },
+                    wealth_1t: { name: "Trillionaire", description: "Earn $1,000,000,000,000 total.", category: "Wealth", condition: () => this.state.money >= 1000000000000 },
+
 
                     // Progression Milestones
                     unlock_coal: { name: "Getting Started", description: "Unlock Coal.", category: "Progression", condition: () => this.state.resources.coal.unlocked },
@@ -115,12 +121,15 @@
                     unlock_diamond: { name: "Gemologist", description: "Unlock Diamond.", category: "Progression", condition: () => this.state.resources.diamond.unlocked },
                     unlock_platinum: { name: "Platinum Club", description: "Unlock Platinum.", category: "Progression", condition: () => this.state.resources.platinum.unlocked },
                     unlock_obsidian: { name: "Master of Mines", description: "Unlock Obsidian.", category: "Progression", condition: () => this.state.resources.obsidian.unlocked },
+                    unlock_mythril: { name: "Mythical Miner", description: "Unlock Mythril.", category: "Progression", condition: () => this.state.resources.mythril?.unlocked },
+                    unlock_orichalcum: { name: "Legendary Extractor", description: "Unlock Orichalcum.", category: "Progression", condition: () => this.state.resources.orichalcum?.unlocked },
                     
                     // Upgrade Milestones
                     first_upgrade_any: { name: "Tinkerer", description: "Buy any upgrade for any resource.", category: "Upgrades", condition: () => Object.values(this.state.resources).some(r => r.manualMineLevel > 0 || r.miners > 0 || r.minerSpeedLevel > 0) },
                     global_power_5: { name: "Global Power", description: "Reach Level 5 in any Global Upgrade.", category: "Upgrades", condition: () => Object.values(this.state.globalUpgrades).some(upg => upg.level >= 5) },
                     hundred_miners_stone: { name: "Stone Automation", description: "Own 100 Stone Miners.", category: "Upgrades", condition: () => this.state.resources.stone.miners >= 100 },
                     all_global_lvl_1: { name: "Well Rounded", description: "Upgrade all Global Upgrades to at least Level 1.", category: "Upgrades", condition: () => Object.values(this.state.globalUpgrades).every(upg => upg.level >= 1)},
+                    
                     // Investment Achievements
                     first_investment: { name: "Market Dabbler", description: "Make your first investment.", category: "Investments", condition: () => Object.values(this.state.investments.portfolio).some(asset => asset.shares > 0) },
                     investment_profit_1k: { name: "Smart Investor", description: "Make $1,000 profit from investments.", category: "Investments", condition: () => (this.state.investments.totalSoldValue - this.state.investments.totalBoughtValue) >= 1000 },
@@ -152,6 +161,8 @@
                         sapphire: { id: 'sapphire', name: 'Sapphire', count: 0, value: 12000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 3000000, miners: 0, minerCostBase: 15000000, minerProductionBase: 0.00005, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 6000000, unlocked: false, unlockRequirements: { money: 50000000, resources: { ruby: 40 } } },
                         amethyst: { id: 'amethyst', name: 'Amethyst', count: 0, value: 30000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 10000000, miners: 0, minerCostBase: 50000000, minerProductionBase: 0.00002, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 20000000, unlocked: false, unlockRequirements: { money: 200000000, resources: { sapphire: 30 } } },
                         obsidian: { id: 'obsidian', name: 'Obsidian', count: 0, value: 75000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 50000000, miners: 0, minerCostBase: 200000000, minerProductionBase: 0.00001, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 80000000, unlocked: false, unlockRequirements: { money: 1000000000, resources: { amethyst: 20 } } },
+                        mythril: { id: 'mythril', name: 'Mythril', count: 0, value: 200000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 250000000, miners: 0, minerCostBase: 1000000000, minerProductionBase: 0.000005, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 400000000, unlocked: false, unlockRequirements: { money: 5000000000, resources: { obsidian: 100 } } },
+                        orichalcum: { id: 'orichalcum', name: 'Orichalcum', count: 0, value: 1000000, manualMineBaseAmount: 1, manualMineLevel: 0, manualMineUpgradeCostBase: 1000000000, miners: 0, minerCostBase: 5000000000, minerProductionBase: 0.000001, minerSpeedLevel: 0, minerSpeedUpgradeCostBase: 2000000000, unlocked: false, unlockRequirements: { money: 25000000000, resources: { mythril: 50 } } },
                     },
                     globalUpgrades: {
                         sellMultiplier: { level: 0, costBase: 1000, value: 1, increasePerLevel: 0.05, name: "Global Sell Multiplier", description: "Increases the sell price of all resources."},
@@ -170,7 +181,7 @@
                         transactionFee: 0.005 
                     },
                     lastUpdate: Date.now(),
-                    lastSave: null, // No longer displayed, but kept for internal logic if needed
+                    lastSave: null,
                     currentTab: 'mines', 
                 };
                 Object.keys(this.achievementsList).forEach(achId => {
@@ -184,46 +195,102 @@
                     };
                     baseState.investments.portfolio[assetId] = { shares: 0, avgBuyPrice: 0 };
                 });
-                return JSON.parse(JSON.stringify(baseState));
+                return JSON.parse(JSON.stringify(baseState)); 
             },
             
-            resetState() {
+            resetState() { // This function is kept in case it's needed elsewhere, but no UI calls it now.
                 this.state = this.getDefaultState();
                 this.state.lastUpdate = Date.now();
-                console.log("Game state reset to default. New game will be auto-saved shortly.");
-                // Immediately save the reset state to ensure it persists if the user closes quickly
+                console.log("Game state reset to default.");
                 if (db && userId && isAuthReady) {
-                    this.saveGame(true); // Force save without toast
+                    this.saveGame(true); 
+                }
+                this.render(); 
+            },
+
+            calculateOfflineProgression(lastKnownUpdateTime) {
+                if (!this.state || !this.state.resources || !lastKnownUpdateTime) return;
+
+                const now = Date.now();
+                const offlineTimeSeconds = Math.max(0, (now - lastKnownUpdateTime) / 1000);
+
+                if (offlineTimeSeconds < 10) { 
+                    this.state.lastUpdate = now;
+                    return;
+                }
+
+                let totalOfflineEarnings = 0;
+                let offlineSummary = "Welcome back! While you were away:<br>"; // Using <br> for toast
+                let anyProduction = false;
+
+                for (const resKey in this.state.resources) {
+                    const resource = this.state.resources[resKey];
+                    if (resource.unlocked && resource.miners > 0) {
+                        const productionPerSecond = resource.miners * this.getMinerProduction(resource);
+                        const offlineGain = productionPerSecond * offlineTimeSeconds;
+                        if (offlineGain > 0) {
+                            resource.count += offlineGain;
+                            totalOfflineEarnings += offlineGain * resource.value * this.state.globalUpgrades.sellMultiplier.value; 
+                            offlineSummary += `+ ${this.formatNumber(offlineGain)} ${resource.name}<br>`;
+                            anyProduction = true;
+                        }
+                    }
+                }
+                
+                this.state.lastUpdate = now; 
+
+                if (anyProduction) {
+                    offlineSummary += `Estimated offline value: $${this.formatNumber(totalOfflineEarnings, 2)}`;
+                    this.showToast(offlineSummary, false, 10000); 
+                    console.log("Offline progression calculated:", offlineSummary.replace(/<br>/g, '\n'));
+                } else {
+                    console.log("No significant offline progression to calculate.");
                 }
             },
 
+
             async loadGame() {
                 if (!db || !userId) {
-                    this.resetState(); this.render();
+                    this.resetState(); 
+                    this.calculateOfflineProgression(Date.now());
+                    this.render();
                     const lm = document.getElementById('loading-message'); if (lm) lm.classList.add('hidden');
                     return;
                 }
                 const docRef = doc(db, `artifacts/${appId}/users/${userId}/mineTycoon/gameState`);
-                if (gameSaveUnsubscribe) gameSaveUnsubscribe();
+                if (gameSaveUnsubscribe) gameSaveUnsubscribe(); 
+                
                 try {
                     gameSaveUnsubscribe = onSnapshot(docRef, async (docSnap) => {
                         const defaultState = this.getDefaultState(); 
+                        let lastKnownUpdateTime = Date.now(); 
+
                         if (docSnap.exists()) {
                             const loadedData = docSnap.data();
                             this.state = { ...defaultState }; 
 
                             for (const key in defaultState) {
-                                if (loadedData.hasOwnProperty(key) && typeof loadedData[key] !== 'object' && key !== 'achievements' && key !== 'investments') { 
+                                if (loadedData.hasOwnProperty(key) && typeof loadedData[key] !== 'object' && 
+                                    key !== 'achievements' && key !== 'investments' && key !== 'resources' && key !== 'globalUpgrades') { 
                                     this.state[key] = loadedData[key];
                                 }
                             }
                             this.state.money = loadedData.money !== undefined ? loadedData.money : defaultState.money;
 
+                            this.state.resources = {};
                             for (const resKey in defaultState.resources) {
-                                this.state.resources[resKey] = { ...defaultState.resources[resKey], ...(loadedData.resources ? loadedData.resources[resKey] : {}) };
+                                this.state.resources[resKey] = { 
+                                    ...defaultState.resources[resKey], 
+                                    ...(loadedData.resources ? loadedData.resources[resKey] : {}) 
+                                };
                             }
+                            
+                            this.state.globalUpgrades = {};
                             for (const upgKey in defaultState.globalUpgrades) {
-                                this.state.globalUpgrades[upgKey] = { ...defaultState.globalUpgrades[upgKey], ...(loadedData.globalUpgrades ? loadedData.globalUpgrades[upgKey] : {}) };
+                                this.state.globalUpgrades[upgKey] = { 
+                                    ...defaultState.globalUpgrades[upgKey], 
+                                    ...(loadedData.globalUpgrades ? loadedData.globalUpgrades[upgKey] : {}) 
+                                };
                             }
                             
                             this.state.achievements = {}; 
@@ -252,46 +319,52 @@
                                 });
                             }
 
-
-                            this.state.lastUpdate = loadedData.lastUpdate || Date.now();
+                            lastKnownUpdateTime = loadedData.lastUpdate || defaultState.lastUpdate; 
                             this.state.lastSave = loadedData.lastSave || null;
-                            this.state.currentTab = loadedData.currentTab || defaultState.currentTab;
+                            // Ensure currentTab is valid, default to 'mines' if not or if settings tab was saved previously
+                            this.state.currentTab = (loadedData.currentTab && loadedData.currentTab !== 'settings') ? loadedData.currentTab : defaultState.currentTab;
                             
                             console.log("Game loaded and merged from Firestore:", JSON.parse(JSON.stringify(this.state)));
                         } else {
                             console.log("No saved game found. Starting new game.");
                             this.resetState(); 
                             await this.saveGame(true); 
+                            lastKnownUpdateTime = this.state.lastUpdate; 
                         }
+                        
+                        this.calculateOfflineProgression(lastKnownUpdateTime);
+                        
                         this.checkAllAchievements(false); 
                         this.render();
                         const lm = document.getElementById('loading-message'); if (lm) lm.classList.add('hidden');
                     }, (error) => {
                         console.error("Error listening to game state:", error);
-                        this.resetState(); this.render();
+                        this.resetState(); 
+                        this.calculateOfflineProgression(Date.now()); 
+                        this.render();
                         const lm = document.getElementById('loading-message'); if (lm) lm.classList.add('hidden');
                     });
                 } catch (error) {
                     console.error("Error setting up onSnapshot listener:", error);
-                    this.resetState(); this.render();
+                    this.resetState(); 
+                    this.calculateOfflineProgression(Date.now()); 
+                    this.render();
                     const lm = document.getElementById('loading-message'); if (lm) lm.classList.add('hidden');
                 }
             },
 
-            async saveGame(showToastOnSuccess = false) { // Changed parameter name for clarity
+            async saveGame(showToastOnSuccess = false) { 
                 if (!db || !userId || !isAuthReady) {
-                    // console.warn("Cannot save game: Firestore not available or user not authenticated."); // Too noisy for auto-save
                     return;
                 }
-                this.state.lastUpdate = Date.now();
-                this.state.lastSave = Date.now(); // Update lastSave time
+                this.state.lastUpdate = Date.now(); 
+                this.state.lastSave = Date.now(); 
                 try {
                     const docRef = doc(db, `artifacts/${appId}/users/${userId}/mineTycoon/gameState`);
                     const stateToSave = JSON.parse(JSON.stringify(this.state));
-                    await setDoc(docRef, stateToSave, { merge: true });
-                    console.log("Game auto-saved to Firestore.");
+                    await setDoc(docRef, stateToSave, { merge: true }); 
+                    console.log("Game saved to Firestore.");
                     if(showToastOnSuccess) this.showToast("Game Saved!"); 
-                    // No need to call render() here just for save, as render is called by update() or specific actions
                 } catch (error) {
                     console.error("Error saving game:", error);
                     if(showToastOnSuccess) this.showToast("Error saving game!", true);
@@ -300,20 +373,20 @@
             
             autoSaveGame() {
                 if (userId && isAuthReady) { 
-                    this.saveGame(false); // Auto-saves should not show a toast
+                    this.saveGame(false); 
                 }
             },
 
-            // --- Market Logic ---
             startMarketUpdates() {
                 if (marketUpdateInterval) clearInterval(marketUpdateInterval);
                 const updateFrequency = () => (Math.random() * 120 + 60) * 1000; 
                 
                 const updateMarket = () => {
-                    if (!this.state || !this.state.investments) return;
+                    if (!this.state || !this.state.investments) return; 
                     Object.keys(this.investableAssets).forEach(assetId => {
                         const assetDef = this.investableAssets[assetId];
                         const marketData = this.state.investments.market[assetId];
+                        if (!marketData) return; 
                         
                         marketData.lastPrice = marketData.currentPrice;
                         
@@ -327,7 +400,7 @@
                         else if (marketData.currentPrice < marketData.lastPrice) marketData.trendArrow = '<span class="text-red-400">&#9660;</span>'; 
                         else marketData.trendArrow = '<span class="text-slate-400">&#8212;</span>'; 
                     });
-                    if(this.state.currentTab === 'investments') this.render(); // Only render if investment tab is active
+                    if(this.state.currentTab === 'investments') this.render(); 
                     marketUpdateInterval = setTimeout(updateMarket, updateFrequency());
                 };
                 marketUpdateInterval = setTimeout(updateMarket, updateFrequency());
@@ -341,6 +414,8 @@
                 }
                 const marketData = this.state.investments.market[assetId];
                 const portfolioData = this.state.investments.portfolio[assetId];
+                if (!marketData || !portfolioData) { this.showToast("Asset data not found.", true); return; }
+
                 const cost = marketData.currentPrice * amount;
                 const fee = cost * this.state.investments.transactionFee;
                 const totalCost = cost + fee;
@@ -367,11 +442,15 @@
             sellShares(assetId, amount) {
                 amount = parseInt(amount);
                 const portfolioData = this.state.investments.portfolio[assetId];
+                if (!portfolioData) { this.showToast("Asset data not found.", true); return; }
+
                 if (isNaN(amount) || amount <= 0 || amount > portfolioData.shares) {
                     this.showToast("Invalid amount or not enough shares.", true);
                     return;
                 }
                 const marketData = this.state.investments.market[assetId];
+                if (!marketData) { this.showToast("Market data not found.", true); return; }
+
                 const revenue = marketData.currentPrice * amount;
                 const fee = revenue * this.state.investments.transactionFee;
                 const totalRevenue = revenue - fee;
@@ -389,19 +468,32 @@
                 this.saveGame(true);
             },
 
-
-            // --- Achievement Logic ---
             checkAllAchievements(showNotification = true) {
                 if (!this.state || !this.state.achievements || !this.achievementsList) return;
                 let newAchievementUnlocked = false;
                 for (const achId in this.achievementsList) {
-                    if (!this.state.achievements[achId] || !this.state.achievements[achId].unlocked) { 
+                    if (!this.achievementsList.hasOwnProperty(achId)) continue;
+                    if (!this.state.achievements[achId]) {
+                         this.state.achievements[achId] = { unlocked: false, unlockedAt: null };
+                    }
+
+                    if (!this.state.achievements[achId].unlocked) { 
                         const achievement = this.achievementsList[achId];
                         try {
-                            if (achievement.condition()) {
-                                if (!this.state.achievements[achId]) { 
-                                    this.state.achievements[achId] = { unlocked: false, unlockedAt: null };
-                                }
+                            let conditionMet = false;
+                            if (achId.startsWith("mine_mythril") && !this.state.resources.mythril) {
+                                conditionMet = false;
+                            } else if (achId.startsWith("mine_orichalcum") && !this.state.resources.orichalcum) {
+                                conditionMet = false;
+                            } else if (achId.startsWith("unlock_mythril") && !this.state.resources.mythril) {
+                                conditionMet = false;
+                            } else if (achId.startsWith("unlock_orichalcum") && !this.state.resources.orichalcum) {
+                                conditionMet = false;
+                            } else {
+                                conditionMet = achievement.condition();
+                            }
+                            
+                            if (conditionMet) {
                                 this.state.achievements[achId].unlocked = true;
                                 this.state.achievements[achId].unlockedAt = Date.now();
                                 if (showNotification) {
@@ -411,7 +503,7 @@
                                 console.log(`Achievement unlocked: ${achievement.name}`);
                             }
                         } catch (e) {
-                            console.error(`Error checking achievement ${achId}:`, e);
+                            console.error(`Error checking achievement ${achId}:`, e, "State:", JSON.parse(JSON.stringify(this.state)));
                         }
                     }
                 }
@@ -421,7 +513,6 @@
                 }
             },
 
-            // --- Game Logic ---
             update() { 
                 if (!isAuthReady || !this.state || !this.state.resources) return; 
 
@@ -435,7 +526,7 @@
                         resource.count += productionPerSecond * deltaTime;
                     }
                 }
-                this.state.lastUpdate = now;
+                this.state.lastUpdate = now; 
                 this.checkAllAchievements(); 
                 this.render(); 
             },
@@ -444,7 +535,7 @@
                 const resource = this.state.resources[resourceId];
                 if (resource && resource.unlocked) {
                     resource.count += this.getManualMineAmount(resource);
-                    this.checkAllAchievements();
+                    this.checkAllAchievements(); 
                     this.render();
                 }
             },
@@ -466,18 +557,20 @@
                 this.saveGame(true); 
             },
 
-            // --- Upgrade Logic & Calculations ---
             getManualMineAmount(resource) {
+                if (!resource) return 0;
                 const geologistBoost = this.state.globalUpgrades.masterGeologist.value;
                 const manualBoost = this.state.globalUpgrades.manualMiningBoost.value;
                 return resource.manualMineBaseAmount * (1 + resource.manualMineLevel * 0.25) * manualBoost * geologistBoost;
             },
             getManualMineUpgradeCost(resource) {
+                if (!resource) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4); 
                 return Math.floor(resource.manualMineUpgradeCostBase * Math.pow(1.25, resource.manualMineLevel) * efficiencyMultiplier);
             },
             buyManualMineUpgrade(resourceId) {
                 const resource = this.state.resources[resourceId];
+                if (!resource) { this.showToast("Resource not found!", true); return; }
                 const cost = this.getManualMineUpgradeCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
@@ -492,11 +585,13 @@
             },
 
             getMinerCost(resource) {
+                if (!resource) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4);
                 return Math.floor(resource.minerCostBase * Math.pow(1.15, resource.miners) * efficiencyMultiplier);
             },
             buyMiner(resourceId) {
                 const resource = this.state.resources[resourceId];
+                if (!resource) { this.showToast("Resource not found!", true); return; }
                 const cost = this.getMinerCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
@@ -511,19 +606,22 @@
             },
 
             getMinerProduction(resource) {
+                if (!resource) return 0;
                 return resource.minerProductionBase * (1 + resource.minerSpeedLevel * 0.15) * this.state.globalUpgrades.minerSpeedBoost.value;
             },
             getMinerSpeedUpgradeCost(resource) {
+                if (!resource) return Infinity;
                 const efficiencyMultiplier = 1 - Math.min(this.state.globalUpgrades.efficiencyTraining.level * this.state.globalUpgrades.efficiencyTraining.increasePerLevel, 0.4);
                 return Math.floor(resource.minerSpeedUpgradeCostBase * Math.pow(1.3, resource.minerSpeedLevel) * efficiencyMultiplier);
             },
             buyMinerSpeedUpgrade(resourceId) {
                 const resource = this.state.resources[resourceId];
+                 if (!resource) { this.showToast("Resource not found!", true); return; }
                 const cost = this.getMinerSpeedUpgradeCost(resource);
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
                     resource.minerSpeedLevel++;
-                    this.showToast(`${resource.name} Miner Speed Lvl ${resource.minerSpeedLevel+1}!`);
+                    this.showToast(`${resource.name} Miner Speed Lvl ${resource.minerSpeedLevel+1}!`); 
                     this.checkAllAchievements();
                     this.render();
                     this.saveGame(true);
@@ -535,7 +633,7 @@
             getGlobalUpgradeCost(upgradeKey) {
                 const upgrade = this.state.globalUpgrades[upgradeKey];
                 if (!upgrade) return Infinity;
-                return Math.floor(upgrade.costBase * Math.pow(1.5 + (upgrade.increasePerLevel * 10) , upgrade.level)); 
+                return Math.floor(upgrade.costBase * Math.pow(1.6 + (upgrade.increasePerLevel * 15) , upgrade.level)); 
             },
             buyGlobalUpgrade(upgradeKey) {
                 const upgrade = this.state.globalUpgrades[upgradeKey];
@@ -547,10 +645,12 @@
                 if (this.state.money >= cost) {
                     this.state.money -= cost;
                     upgrade.level++;
-                    if (upgradeKey !== "researchAndDevelopment" && upgradeKey !== "efficiencyTraining") {
-                        upgrade.value += upgrade.increasePerLevel; 
+                    if (upgradeKey === "researchAndDevelopment") {
+                        upgrade.value = 1 - Math.min(upgrade.level * upgrade.increasePerLevel, 0.5); 
+                    } else if (upgradeKey === "efficiencyTraining") {
+                        upgrade.value = 1 - Math.min(upgrade.level * upgrade.increasePerLevel, 0.4);
                     } else {
-                         upgrade.value = 1 - Math.min(upgrade.level * upgrade.increasePerLevel, (upgradeKey === "researchAndDevelopment" ? 0.5 : 0.4) ); 
+                         upgrade.value = 1 + (upgrade.level * upgrade.increasePerLevel); 
                     }
                     this.showToast(`${upgrade.name} now Lvl ${upgrade.level}!`);
                     this.checkAllAchievements();
@@ -564,21 +664,23 @@
             getUnlockRequirements(resource) {
                 if (!resource || !resource.unlockRequirements) return null;
                 const req = JSON.parse(JSON.stringify(resource.unlockRequirements)); 
-                const researchBonus = 1 - Math.min(this.state.globalUpgrades.researchAndDevelopment.level * this.state.globalUpgrades.researchAndDevelopment.increasePerLevel, 0.5); 
+                const researchBonusMultiplier = 1 - Math.min(this.state.globalUpgrades.researchAndDevelopment.level * this.state.globalUpgrades.researchAndDevelopment.increasePerLevel, 0.5);
 
                 if (req.money) {
-                    req.money = Math.floor(req.money * researchBonus);
+                    req.money = Math.floor(req.money * researchBonusMultiplier);
                 }
                 if (req.resources) {
                     for (const resKey in req.resources) {
-                        req.resources[resKey] = Math.floor(req.resources[resKey] * researchBonus);
+                        if (this.state.resources[resKey]) {
+                             req.resources[resKey] = Math.floor(req.resources[resKey] * researchBonusMultiplier);
+                        }
                     }
                 }
                 return req;
             },
 
             checkUnlockConditions(resource) {
-                 if (!resource) return false; 
+                if (!resource) return false; 
                 const actualRequirements = this.getUnlockRequirements(resource);
                 if (!resource.unlocked && actualRequirements) {
                     let canUnlock = true;
@@ -598,9 +700,11 @@
 
             unlockResource(resourceId) {
                 const resource = this.state.resources[resourceId];
+                if (!resource) { this.showToast("Resource to unlock not found!", true); return; }
+
                 const actualRequirements = this.getUnlockRequirements(resource);
 
-                if (resource && actualRequirements && this.checkUnlockConditions(resource)) { 
+                if (resource && !resource.unlocked && actualRequirements && this.checkUnlockConditions(resource)) { 
                     if (actualRequirements.money) this.state.money -= actualRequirements.money;
                     if (actualRequirements.resources) {
                         for (const resKey in actualRequirements.resources) {
@@ -613,14 +717,14 @@
                     this.render();
                     this.saveGame(true);
                 } else {
-                    this.showToast("Cannot meet unlock requirements or resource not found!", true);
+                    this.showToast("Cannot meet unlock requirements or resource already unlocked!", true);
                 }
             },
             
-            // --- UI Rendering ---
             render() {
                 if (!document.body || !document.getElementById('money-display') || !this.state || !this.state.resources || !this.state.globalUpgrades || !this.state.achievements || !this.state.investments) {
-                    console.warn("Render called too early or critical elements/state missing.");
+                    console.warn("Render called too early or critical elements/state missing. Deferring render.");
+                    requestAnimationFrame(() => this.render());
                     return;
                 }
 
@@ -635,9 +739,13 @@
                         card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col'; 
 
                         if (!res.unlocked) {
-                            if (this.checkUnlockConditions(res)) {
-                                card.classList.add('border-2', 'border-green-500'); 
+                            if (this.checkUnlockConditions(res)) { 
+                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:bg-slate-600'); 
                                 card.innerHTML = this.createUnlockCardInnerHtml(res);
+                                card.querySelector('button[data-action="unlockResource"]')?.addEventListener('click', (e) => {
+                                    e.stopPropagation(); 
+                                    this.unlockResource(res.id);
+                                });
                             } else {
                                 card.classList.add('opacity-70', 'bg-slate-800'); 
                                 card.innerHTML = this.createLockedCardInnerHtml(res);
@@ -658,7 +766,7 @@
                                         <button data-action="buyManualMineUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md transform hover:scale-105 transition-transform">Upgrade ($${this.formatNumber(this.getManualMineUpgradeCost(res))})</button>
                                     </div>
                                     <div class="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-600">
-                                        <p class="text-xs sm:text-sm text-slate-300 mb-1">Miners: ${res.miners} (Lvl ${res.minerSpeedLevel + 1})</p>
+                                        <p class="text-xs sm:text-sm text-slate-300 mb-1">Miners: ${res.miners} (Speed Lvl ${res.minerSpeedLevel + 1})</p>
                                         <button data-action="buyMiner" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-purple-500 hover:bg-purple-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md mb-1 transform hover:scale-105 transition-transform">Buy Miner ($${this.formatNumber(this.getMinerCost(res))})</button>
                                         <button data-action="buyMinerSpeedUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-teal-500 hover:bg-teal-600 text-white py-1 px-1.5 sm:py-1 sm:px-2 rounded-md transform hover:scale-105 transition-transform">Upgrade Speed ($${this.formatNumber(this.getMinerSpeedUpgradeCost(res))})</button>
                                     </div>
@@ -674,16 +782,17 @@
                     globalUpgradesContainer.innerHTML = '';
                     for (const upgradeKey in this.state.globalUpgrades) {
                         const upgrade = this.state.globalUpgrades[upgradeKey];
+                        if (!upgrade) continue; 
                         const card = document.createElement('div');
                         card.className = 'bg-slate-700 p-3 sm:p-4 rounded-lg shadow-md flex flex-col justify-between'; 
                         let effectDesc = upgrade.description || ""; 
                         let currentEffect = "";
                         if (upgradeKey === "sellMultiplier" || upgradeKey === "minerSpeedBoost" || upgradeKey === "manualMiningBoost" || upgradeKey === "masterGeologist") {
-                            currentEffect = `${(upgrade.value).toFixed(2)}x Bonus`;
+                             currentEffect = `${( (1 + upgrade.level * upgrade.increasePerLevel) * 100 - 100).toFixed(1)}% Bonus`; 
                         } else if (upgradeKey === "researchAndDevelopment") {
-                            currentEffect = `${(upgrade.level * upgrade.increasePerLevel * 100).toFixed(1)}% Unlock Cost Reduction`;
+                            currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 50).toFixed(1)}% Cost Reduction`;
                         } else if (upgradeKey === "efficiencyTraining") {
-                            currentEffect = `${(upgrade.level * upgrade.increasePerLevel * 100).toFixed(1)}% Upgrade Cost Reduction`;
+                            currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 40).toFixed(1)}% Cost Reduction`;
                         }
                         card.innerHTML = `
                             <div class="flex-grow">
@@ -702,6 +811,7 @@
                     achievementsContainer.innerHTML = '';
                     const categories = {};
                     Object.entries(this.achievementsList).forEach(([id, achDef]) => {
+                        if (!achDef || !achDef.category) return; 
                         if (!categories[achDef.category]) categories[achDef.category] = [];
                         categories[achDef.category].push({id, ...achDef});
                     });
@@ -718,7 +828,7 @@
                             const bUnlocked = this.state.achievements[b.id]?.unlocked;
                             if (aUnlocked && !bUnlocked) return -1;
                             if (!aUnlocked && bUnlocked) return 1;
-                            return a.name.localeCompare(b.name);
+                            return a.name.localeCompare(b.name); 
                         }).forEach(ach => {
                             const achState = this.state.achievements[ach.id];
                             const card = document.createElement('div');
@@ -745,6 +855,8 @@
                         const assetDef = this.investableAssets[assetId];
                         const marketData = this.state.investments.market[assetId];
                         const portfolioData = this.state.investments.portfolio[assetId];
+                        if (!assetDef || !marketData || !portfolioData) continue; 
+
                         const currentAssetValue = marketData.currentPrice * portfolioData.shares;
                         totalPortfolioValue += currentAssetValue;
 
@@ -753,7 +865,7 @@
                         card.innerHTML = `
                             <div class="flex-grow">
                                 <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${assetDef.name}</h3>
-                                <p class="text-xl sm:text-2xl my-1 sm:my-2">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow}</p>
+                                <p class="text-xl sm:text-2xl my-1 sm:my-2">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow || '&#8212;'}</p>
                                 <p class="text-xs sm:text-sm text-slate-400">Last: $${this.formatNumber(marketData.lastPrice, 2)}</p>
                                 <hr class="my-2 sm:my-3 border-slate-600">
                                 <p class="text-base sm:text-lg font-medium">Your Portfolio:</p>
@@ -776,17 +888,19 @@
                     }
                     const portfolioSummary = document.getElementById('portfolio-summary');
                     if (portfolioSummary) {
-                         const currentTotalPortfolioValue = Object.values(this.state.investments.portfolio).reduce((sum, p) => {
-                            const assetKey = Object.keys(this.investableAssets).find(key => this.investableAssets[key].name === this.investableAssets[Object.keys(this.investableAssets).find(k => this.state.investments.portfolio[k] === p)].name); 
-                            if (assetKey && this.state.investments.market[assetKey]) {
-                                return sum + (p.shares * this.state.investments.market[assetKey].currentPrice);
+                         const currentTotalPortfolioValue = Object.keys(this.state.investments.portfolio).reduce((sum, assetId) => {
+                            const p = this.state.investments.portfolio[assetId];
+                            const m = this.state.investments.market[assetId];
+                            if (p && m) {
+                                return sum + (p.shares * m.currentPrice);
                             }
                             return sum;
                         }, 0);
 
                         const totalCostOfCurrentShares = Object.values(this.state.investments.portfolio).reduce((sum,p) => sum + (p.shares * p.avgBuyPrice), 0);
                         const unrealizedPL = currentTotalPortfolioValue - totalCostOfCurrentShares;
-                        const realizedPL = this.state.investments.totalSoldValue - this.state.investments.totalBoughtValue;
+                        const realizedPL = (this.state.investments.totalSoldValue || 0) - (this.state.investments.totalBoughtValue || 0);
+
 
                         portfolioSummary.innerHTML = `
                             <p class="text-base sm:text-lg">Total Portfolio Value: <span class="font-semibold text-sky-400">$${this.formatNumber(totalPortfolioValue, 2)}</span></p>
@@ -797,16 +911,17 @@
                     }
                 }
                 
-                // No longer rendering last save time or user ID from settings tab
                 document.getElementById('mines-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'mines');
                 document.getElementById('upgrades-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'upgrades');
                 document.getElementById('investments-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'investments');
                 document.getElementById('achievements-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'achievements');
-                // Settings tab content div is removed from HTML, so no need to toggle it.
+                // Settings tab content div is removed, so no need to toggle it.
 
                 document.querySelectorAll('button[data-tab]').forEach(tabButton => {
                     tabButton.classList.toggle('bg-sky-600', tabButton.dataset.tab === this.state.currentTab); 
+                    tabButton.classList.toggle('text-white', tabButton.dataset.tab === this.state.currentTab);
                     tabButton.classList.toggle('bg-sky-800', tabButton.dataset.tab !== this.state.currentTab); 
+                    tabButton.classList.toggle('text-sky-200', tabButton.dataset.tab !== this.state.currentTab); 
                     tabButton.classList.toggle('hover:bg-sky-500', tabButton.dataset.tab !== this.state.currentTab); 
                     tabButton.classList.toggle('hover:bg-sky-600', tabButton.dataset.tab === this.state.currentTab); 
                 });
@@ -815,7 +930,7 @@
             createUnlockCardInnerHtml(resource) { 
                 let requirementsText = "Requirements: ";
                 const actualRequirements = this.getUnlockRequirements(resource);
-                if (!resource || !actualRequirements) return ""; 
+                if (!resource || !actualRequirements) return "<p>Error loading requirements.</p>"; 
                 
                 if (actualRequirements.money) requirementsText += `$${this.formatNumber(actualRequirements.money)} `;
                 if (actualRequirements.resources) {
@@ -837,7 +952,7 @@
             createLockedCardInnerHtml(resource) { 
                 let requirementsText = "Requirements: ";
                 const actualRequirements = this.getUnlockRequirements(resource);
-                if (!resource || !actualRequirements) return ""; 
+                if (!resource || !actualRequirements) return "<p>Error loading requirements.</p>"; 
 
                 if (actualRequirements.money) requirementsText += `$${this.formatNumber(actualRequirements.money)} `;
                 if (actualRequirements.resources) {
@@ -856,7 +971,6 @@
                     <p class="text-center text-slate-500 italic mt-auto text-xs sm:text-sm">Meet requirements to unlock.</p>`;
             },
 
-            // --- Event Handling ---
             setupEventListeners() {
                 document.body.addEventListener('click', (event) => {
                     const target = event.target.closest('button[data-action]');
@@ -874,7 +988,7 @@
                     else if (action === 'sellAllResources') this.sellAllResources();
                     else if (action === 'buyGlobalUpgrade') this.buyGlobalUpgrade(upgradeKey); 
                     else if (action === 'unlockResource') this.unlockResource(resourceId);
-                    // Removed 'saveGame' and 'resetGame' from here as buttons are gone
+                    // Removed 'resetGame' action as settings tab is gone.
                     else if (action === 'buyShares') {
                         const amountInput = document.getElementById(`buy-${assetId}-amount`);
                         if (amountInput) {
@@ -896,56 +1010,101 @@
             },
             
             switchTab(tabId) {
-                if(tabId) { 
+                if(tabId && this.state.currentTab !== tabId && tabId !== 'settings') { // Ensure not switching to removed settings tab
                     this.state.currentTab = tabId;
-                    this.render();
+                    this.render(); 
                 }
             },
 
-            // confirmResetGame is removed as the button is gone.
+            // confirmResetGame() is removed as the settings tab and reset button are gone.
 
             formatNumber(num, precision = 0) {
                 if (num === undefined || num === null || isNaN(parseFloat(num))) return '0'; 
-                return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: precision, maximumFractionDigits: precision });
+                const numFloat = parseFloat(num);
+                if (Math.abs(numFloat) < 1e-9 && numFloat !== 0) return numFloat.toExponential(precision); 
+                return numFloat.toLocaleString(undefined, { 
+                    minimumFractionDigits: precision, 
+                    maximumFractionDigits: precision 
+                });
             },
 
-            showToast(message, isError = false) {
+            showToast(message, isError = false, duration = 3000) {
                 const toast = document.getElementById('toast-notification');
                 const toastMessage = document.getElementById('toast-message');
                 if(!toast || !toastMessage) { console.warn("Toast elements not found"); return; }
-                toastMessage.textContent = message;
-                toast.classList.remove('hidden', 'bg-red-500', 'bg-green-500');
-                toast.classList.add(isError ? 'bg-red-500' : 'bg-green-500');
-                setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+                
+                if (toast.dataset.timeoutId) {
+                    clearTimeout(parseInt(toast.dataset.timeoutId));
+                }
+
+                toastMessage.innerHTML = message; 
+                toast.classList.remove('hidden', 'bg-red-500', 'bg-green-500', 'bg-blue-500');
+                
+                let bgColor = 'bg-green-500'; 
+                if (isError) {
+                    bgColor = 'bg-red-500';
+                } else if (message.toLowerCase().includes('welcome back')) { 
+                    bgColor = 'bg-blue-500';
+                }
+                toast.classList.add(bgColor);
+                
+                const timeoutId = setTimeout(() => { 
+                    toast.classList.add('hidden'); 
+                    toast.removeAttribute('data-timeout-id');
+                }, duration);
+                toast.dataset.timeoutId = timeoutId.toString();
             },
 
-            showModal(title, message, onConfirm) { // Kept in case needed for other confirmations later
+            showModal(title, message, onConfirm) { 
                 const modal = document.getElementById('confirmation-modal');
                 const modalTitle = document.getElementById('modal-title');
                 const modalMessage = document.getElementById('modal-message');
                 const confirmButton = document.getElementById('modal-confirm');
                 const cancelButton = document.getElementById('modal-cancel');
                 if (!modal || !modalTitle || !modalMessage || !confirmButton || !cancelButton) { console.warn("Modal elements not found"); return; }
+                
                 modalTitle.textContent = title;
                 modalMessage.textContent = message;
+                
                 const newConfirmButton = confirmButton.cloneNode(true);
                 confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+                
                 const newCancelButton = cancelButton.cloneNode(true);
                 cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+
                 newConfirmButton.onclick = async () => { 
-                    if (typeof onConfirm === 'function') { try { await onConfirm(); } catch (e) { console.error("Error in modal confirm:", e); } }
+                    if (typeof onConfirm === 'function') { 
+                        try { 
+                            await onConfirm(); 
+                        } catch (e) { 
+                            console.error("Error in modal confirm callback:", e); 
+                            this.showToast("An error occurred.", true);
+                        } 
+                    }
                     modal.classList.add('hidden');
                 };
-                newCancelButton.onclick = () => { modal.classList.add('hidden'); };
+                newCancelButton.onclick = () => { 
+                    modal.classList.add('hidden'); 
+                };
+                
                 modal.classList.remove('hidden');
             }
         };
 
-        document.addEventListener('DOMContentLoaded', () => { Game.init(); });
+        document.addEventListener('DOMContentLoaded', () => { 
+            Game.init().catch(err => {
+                console.error("Error during Game.init():", err);
+                const loadingMessage = document.getElementById('loading-message');
+                if (loadingMessage) {
+                    loadingMessage.innerHTML = '<p class="text-xl sm:text-2xl text-red-500">Failed to load game. Please try refreshing.</p>';
+                    loadingMessage.classList.remove('hidden');
+                }
+            });
+        });
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .tab-button { transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out; }
+        .tab-button { transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out, color 0.2s ease-in-out; }
         .tab-button:hover { transform: translateY(-1px); }
         .tab-button.bg-sky-600 { 
             box-shadow: inset 0 -2px 0 0 #0284c7; 
@@ -953,6 +1112,7 @@
         .grid { align-items: stretch; } 
         .grid > div { display: flex; flex-direction: column; } 
         .grid > div > div:first-child { flex-grow: 1; } 
+        #achievements-container { max-height: 70vh; overflow-y: auto; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-2 sm:p-4 selection:bg-sky-500 selection:text-white">
@@ -971,10 +1131,10 @@
 
     <nav class="w-full max-w-7xl mb-6 sm:mb-8 sticky top-0 z-40 bg-slate-900 py-2 shadow-sm">
         <div class="flex justify-center space-x-1 sm:space-x-2 bg-slate-800 p-1 sm:p-1.5 rounded-lg shadow-lg">
-            <button data-tab="mines" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-white font-medium text-xs sm:text-sm">Mines</button>
-            <button data-tab="upgrades" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-white font-medium text-xs sm:text-sm">Upgrades</button>
-            <button data-tab="investments" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-white font-medium text-xs sm:text-sm">Invest</button>
-            <button data-tab="achievements" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-white font-medium text-xs sm:text-sm">Achieve</button>
+            <button data-tab="mines" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Mines</button>
+            <button data-tab="upgrades" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Upgrades</button>
+            <button data-tab="investments" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Invest</button>
+            <button data-tab="achievements" class="tab-button flex-1 py-1.5 px-2 sm:py-2 sm:px-4 rounded-md bg-sky-800 text-sky-200 hover:text-white font-medium text-xs sm:text-sm">Achieve</button>
             </div>
     </nav>
 
@@ -1000,13 +1160,13 @@
 
         <div id="achievements-tab-content" class="hidden">
             <h2 class="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8 text-sky-300 text-center">Achievements</h2>
-            <div id="achievements-container">
+            <div id="achievements-container"> 
             </div>
         </div>
         
         </main>
 
-    <div id="toast-notification" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 p-3 sm:p-4 rounded-lg text-white shadow-xl hidden transition-all duration-300 ease-in-out z-[150] text-xs sm:text-sm">
+    <div id="toast-notification" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 p-3 sm:p-4 rounded-lg text-white shadow-xl hidden transition-all duration-300 ease-in-out z-[150] text-xs sm:text-sm max-w-xs sm:max-w-sm break-words">
         <p id="toast-message"></p>
     </div>
 
@@ -1022,7 +1182,7 @@
     </div>
 
     <footer class="w-full max-w-7xl mt-8 sm:mt-12 py-4 sm:py-6 text-center text-xs sm:text-sm text-slate-500 border-t border-slate-700">
-        Mine Tycoon &copy; 2024-2025. Built with Firebase & Tailwind CSS.
+        Mine Tycoon &copy; 2024-2025. Upgraded Version.
     </footer>
 
 </body>
