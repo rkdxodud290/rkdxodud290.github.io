@@ -2355,7 +2355,7 @@
             confirmResetGame() { 
                 this.showModal(
                     "Confirm Reset", 
-                    "Are you sure you want to reset all your game progress? This action cannot be undone. This will reset EVERYTHING, including Prestige progress.",
+                    "Are you sure you want to reset all your game progress? This action cannot be undone. This will reset EVERYTHING, including Prestige progress like sudo rm -rf /.",
                     async () => { 
                         this.resetState(false); 
                         this.showToast("Game has been reset!", false);
