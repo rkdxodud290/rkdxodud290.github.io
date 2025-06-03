@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game with AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Import Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a202c; /* Dark background */
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0; /* Light text color */
+            overflow: hidden; /* Prevent scrolling */
+            position: relative; /* For overlay */
+        }
+
+        .game-container {
+            background-color: #2d3748; /* Slightly lighter background for container */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4); /* Stronger shadow */
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            max-width: 95vw; /* More responsive width */
+            margin: 1rem;
+            position: relative;
+            z-index: 1; /* Ensure container is above background effects if any */
+        }
+
+        canvas {
+            background-color: #0d121c; /* Even darker canvas background */
+            border: 3px solid #63b3ed; /* More prominent, vibrant border */
+            border-radius: 1rem; /* Rounded corners for canvas */
+            display: block;
+            width: 100%; /* Fluid width */
+            max-width: 900px; /* Increased max width */
+            height: auto; /* Maintain aspect ratio */
+            aspect-ratio: 16 / 9; /* Standard aspect ratio for games */
+            box-shadow: inset 0 0 15px rgba(99, 179, 237, 0.5); /* Inner glow effect */
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 900px;
+            font-size: 1.75rem; /* Larger font size */
+            font-weight: 700;
+            color: #63b3ed; /* Vibrant score color */
+            text-shadow: 0 0 8px rgba(99, 179, 237, 0.7); /* Glow effect for scores */
+        }
+
+        .controls {
+            display: flex;
+            gap: 1.5rem; /* Increased gap */
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(145deg, #4299e1, #3182ce); /* Gradient background */
+            color: white;
+            border: none;
+            padding: 1rem 2rem; /* Larger padding */
+            border-radius: 1rem; /* More rounded corners */
+            font-size: 1.1rem; /* Slightly larger font */
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out; /* Slower transition */
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            outline: none;
+            position: relative;
+            overflow: hidden; /* For ripple effect */
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #3182ce, #2c5282);
+            transform: translateY(-3px); /* More pronounced lift */
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Ripple effect for buttons */
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(1) translate(-50%, -50%);
+            transition: transform 0.5s, opacity 0.5s;
+        }
+
+        button:active::after {
+            transform: scale(15) translate(-50%, -50%);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9); /* Darker overlay */
+            color: white;
+            padding: 3rem; /* Larger padding */
+            border-radius: 1.5rem; /* More rounded */
+            text-align: center;
+            font-size: 2rem; /* Larger font */
+            font-weight: 700;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); /* White glow */
+        }
+
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .game-info {
+                font-size: 1.25rem;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            button {
+                width: 90%;
+                padding: 0.8rem 1.5rem;
+            }
+            .message-box {
+                font-size: 1.5rem;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Pong Game with AI</h1>
+        <div class="game-info">
+            <span id="player1-score">Player: 0</span>
+            <span id="player2-score">Computer: 0</span>
+        </div>
+        <canvas id="pongCanvas"></canvas>
+        <div class="controls">
+            <button id="startButton">Start Game</button>
+            <button id="resetButton">Reset Game</button>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        // Get the canvas element and its 2D rendering context
+        const canvas = document.getElementById('pongCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Get score display elements
+        const player1ScoreDisplay = document.getElementById('player1-score');
+        const player2ScoreDisplay = document.getElementById('player2-score');
+
+        // Get control buttons
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+
+        // Get message box element
+        const messageBox = document.getElementById('messageBox');
+
+        // Game state variables
+        let gameRunning = false;
+        let animationFrameId;
+
+        // Paddle properties
+        const paddleWidth = 12; // Slightly wider paddles
+        const paddleHeight = 110; // Slightly taller paddles
+        const paddleSpeed = 6; // Slightly faster paddle speed
+        const aiSpeed = 5; // AI paddle speed (slightly slower than player for challenge)
+
+        // Player 1 (left) paddle - Human Player
+        let player1 = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0, // Vertical movement speed
+            score: 0,
+            hitEffect: 0 // For visual hit effect
+        };
+
+        // Player 2 (right) paddle - AI Player
+        let player2 = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0, // Vertical movement speed
+            score: 0,
+            hitEffect: 0 // For visual hit effect
+        };
+
+        // Ball properties
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 8, // Slightly larger ball
+            dx: 6, // Slightly faster horizontal movement speed
+            dy: 6, // Slightly faster vertical movement speed
+            glowIntensity: 0 // For ball glow effect
+        };
+
+        // Sound effects using Tone.js
+        // Paddle hit sound
+        const paddleSynth = new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 }
+        }).toDestination();
+
+        // Wall hit sound
+        const wallSynth = new Tone.Synth({
+            oscillator: { type: 'triangle' },
+            envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.1 }
+        }).toDestination();
+
+        // Score sound
+        const scoreSynth = new Tone.MembraneSynth().toDestination();
+
+
+        /**
+         * Plays a sound effect.
+         * @param {Tone.Synth} synth - The Tone.js synthesizer to use.
+         * @param {string} note - The musical note to play (e.g., 'C4').
+         * @param {number} duration - The duration of the note in seconds.
+         */
+        function playSound(synth, note, duration) {
+            synth.triggerAttackRelease(note, duration);
+        }
+
+        /**
+         * Displays a message in a custom message box.
+         * @param {string} message - The message to display.
+         * @param {number} duration - How long the message should be visible in milliseconds. Set to 0 for persistent.
+         */
+        function showMessage(message, duration = 2000) {
+            messageBox.textContent = message;
+            messageBox.classList.add('show');
+            if (duration > 0) {
+                setTimeout(() => {
+                    messageBox.classList.remove('show');
+                }, duration);
+            }
+        }
+
+        /**
+         * Resets the ball to the center and gives it a random direction.
+         */
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            // Randomize ball direction horizontally
+            ball.dx = (Math.random() < 0.5 ? 1 : -1) * 6; // Initial speed
+            // Randomize ball direction vertically
+            ball.dy = (Math.random() < 0.5 ? 1 : -1) * 6; // Initial speed
+            ball.glowIntensity = 0; // Reset glow
+        }
+
+        /**
+         * Resets the entire game state, including scores and paddle positions.
+         */
+        function resetGame() {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId); // Stop any ongoing animation
+            player1.score = 0;
+            player2.score = 0;
+            updateScores();
+            player1.y = canvas.height / 2 - paddleHeight / 2;
+            player2.y = canvas.height / 2 - paddleHeight / 2;
+            player1.hitEffect = 0;
+            player2.hitEffect = 0;
+            resetBall();
+            draw(); // Draw the initial state
+            showMessage("Game Reset! Press 'Start Game' to play.", 0); // Show persistent message
+        }
+
+        /**
+         * Starts the game loop.
+         */
+        function startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                messageBox.classList.remove('show'); // Hide message box
+                animate(); // Start the animation loop
+            }
+        }
+
+        /**
+         * Draws a rectangle with a gradient and optional glow.
+         * @param {number} x - X coordinate of the top-left corner.
+         * @param {number} y - Y coordinate of the top-left corner.
+         * @param {number} width - Width of the rectangle.
+         * @param {number} height - Height of the rectangle.
+         * @param {string} color1 - Start color of the gradient.
+         * @param {string} color2 - End color of the gradient.
+         * @param {number} hitEffect - Intensity of the hit effect (0-1).
+         */
+        function drawPaddle(x, y, width, height, color1, color2, hitEffect) {
+            // Create a linear gradient
+            const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, width, height);
+
+            // Add a subtle glow effect
+            ctx.shadowColor = color1;
+            ctx.shadowBlur = 10 + hitEffect * 10; // More blur on hit
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fillRect(x, y, width, height); // Redraw to apply shadow
+
+            ctx.shadowBlur = 0; // Reset shadow
+        }
+
+        /**
+         * Draws a circle with a gradient and glow.
+         * @param {number} x - X coordinate of the center.
+         * @param {number} y - Y coordinate of the center.
+         * @param {number} radius - Radius of the circle.
+         * @param {string} color1 - Start color of the gradient.
+         * @param {string} color2 - End color of the gradient.
+         * @param {number} glowIntensity - Intensity of the glow (0-1).
+         */
+        function drawBall(x, y, radius, color1, color2, glowIntensity) {
+            // Create radial gradient for the ball
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            ctx.fillStyle = gradient;
+
+            // Draw the ball
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
+            ctx.fill();
+
+            // Add glow effect
+            ctx.shadowColor = color1;
+            ctx.shadowBlur = 15 * glowIntensity; // Adjust glow intensity
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fill(); // Redraw to apply shadow
+
+            ctx.shadowBlur = 0; // Reset shadow
+        }
+
+        /**
+         * Updates the score displays on the UI.
+         */
+        function updateScores() {
+            player1ScoreDisplay.textContent = `Player: ${player1.score}`;
+            player2ScoreDisplay.textContent = `Computer: ${player2.score}`;
+        }
+
+        /**
+         * Draws all game elements on the canvas.
+         */
+        function draw() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw paddles with gradients and hit effects
+            drawPaddle(player1.x, player1.y, player1.width, player1.height, '#63b3ed', '#3182ce', player1.hitEffect); // Blue paddle
+            drawPaddle(player2.x, player2.y, player2.width, player2.height, '#fc8181', '#e53e3e', player2.hitEffect); // Red paddle
+
+            // Draw ball with gradient and glow
+            drawBall(ball.x, ball.y, ball.radius, '#f6e05e', '#ecc94b', ball.glowIntensity); // Yellow ball
+
+            // Draw dashed line in the middle
+            ctx.strokeStyle = '#4a5568'; // Darker grey
+            ctx.setLineDash([15, 15]); // Larger dashed pattern
+            ctx.lineWidth = 2; // Thicker line
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+            ctx.lineWidth = 1; // Reset line width
+        }
+
+        /**
+         * Updates the game state (paddle and ball positions, collisions).
+         */
+        function update() {
+            // Update paddle positions
+            player1.y += player1.dy;
+            // AI logic for Player 2
+            if (ball.dx > 0) { // Only move AI if ball is coming towards its side
+                const paddleCenter = player2.y + player2.height / 2;
+                if (paddleCenter < ball.y - 10) { // Ball is below paddle center (with a small buffer)
+                    player2.dy = aiSpeed;
+                } else if (paddleCenter > ball.y + 10) { // Ball is above paddle center (with a small buffer)
+                    player2.dy = -aiSpeed;
+                } else {
+                    player2.dy = 0; // Stop if aligned
+                }
+            } else {
+                // If ball is going away, slowly recenter the AI paddle
+                const centerOfCanvas = canvas.height / 2 - player2.height / 2;
+                if (player2.y < centerOfCanvas - 5) {
+                    player2.dy = aiSpeed / 2;
+                } else if (player2.y > centerOfCanvas + 5) {
+                    player2.dy = -aiSpeed / 2;
+                } else {
+                    player2.dy = 0;
+                }
+            }
+            player2.y += player2.dy;
+
+
+            // Keep paddles within canvas bounds
+            player1.y = Math.max(0, Math.min(canvas.height - player1.height, player1.y));
+            player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
+
+            // Update ball position
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball glow effect animation
+            ball.glowIntensity = Math.sin(Date.now() * 0.005) * 0.5 + 0.5; // Pulsating glow
+
+            // Decrease hit effect over time
+            player1.hitEffect = Math.max(0, player1.hitEffect - 0.05);
+            player2.hitEffect = Math.max(0, player2.hitEffect - 0.05);
+
+            // Ball collision with top/bottom walls
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy *= -1; // Reverse vertical direction
+                playSound(wallSynth, 'D4', '8n'); // Play wall hit sound
+            }
+
+            // Ball collision with paddles
+            // Player 1 paddle (left)
+            if (ball.dx < 0 && // Ball is moving left
+                ball.x - ball.radius < player1.x + player1.width && // Ball is at or past paddle's right edge
+                ball.y + ball.radius > player1.y && // Ball is below paddle's top edge
+                ball.y - ball.radius < player1.y + player1.height) { // Ball is above paddle's bottom edge
+                ball.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
+                ball.dy *= 1.05; // Slightly increase vertical speed
+                player1.hitEffect = 1; // Activate hit effect
+                playSound(paddleSynth, 'C5', '16n'); // Play paddle hit sound
+                // Adjust ball position to prevent sticking
+                ball.x = player1.x + player1.width + ball.radius;
+            }
+
+            // Player 2 paddle (right)
+            if (ball.dx > 0 && // Ball is moving right
+                ball.x + ball.radius > player2.x && // Ball is at or past paddle's left edge
+                ball.y + ball.radius > player2.y && // Ball is below paddle's top edge
+                ball.y - ball.radius < player2.y + player2.height) { // Ball is above paddle's bottom edge
+                ball.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
+                ball.dy *= 1.05; // Slightly increase vertical speed
+                player2.hitEffect = 1; // Activate hit effect
+                playSound(paddleSynth, 'C5', '16n'); // Play paddle hit sound
+                // Adjust ball position to prevent sticking
+                ball.x = player2.x - ball.radius;
+            }
+
+            // Ball out of bounds (scoring)
+            if (ball.x - ball.radius < -10) { // Ball went past left wall (Player 2 scores)
+                player2.score++;
+                updateScores();
+                playSound(scoreSynth, 'G3', '4n'); // Play score sound
+                if (player2.score >= 5) { // Win condition
+                    showMessage("Computer Wins! Press 'Reset Game' to play again.");
+                    gameRunning = false;
+                    cancelAnimationFrame(animationFrameId);
+                } else {
+                    showMessage("Computer Scored!");
+                    resetBall();
+                }
+            } else if (ball.x + ball.radius > canvas.width + 10) { // Ball went past right wall (Player 1 scores)
+                player1.score++;
+                updateScores();
+                playSound(scoreSynth, 'G3', '4n'); // Play score sound
+                if (player1.score >= 5) { // Win condition
+                    showMessage("Player Wins! Press 'Reset Game' to play again.");
+                    gameRunning = false;
+                    cancelAnimationFrame(animationFrameId);
+                } else {
+                    showMessage("Player Scored!");
+                    resetBall();
+                }
+            }
+        }
+
+        /**
+         * Main game loop. Updates game state and redraws elements.
+         */
+        function animate() {
+            if (gameRunning) {
+                update();
+                draw();
+                animationFrameId = requestAnimationFrame(animate); // Request next frame
+            }
+        }
+
+        /**
+         * Handles keyboard input for paddle movement.
+         * @param {KeyboardEvent} event - The keyboard event object.
+         */
+        function handleKeyDown(event) {
+            switch (event.key) {
+                // Player 1 controls (W, S)
+                case 'w':
+                case 'W':
+                    player1.dy = -paddleSpeed;
+                    break;
+                case 's':
+                case 'S':
+                    player1.dy = paddleSpeed;
+                    break;
+            }
+        }
+
+        /**
+         * Stops paddle movement when key is released.
+         * @param {KeyboardEvent} event - The keyboard event object.
+         */
+        function handleKeyUp(event) {
+            switch (event.key) {
+                case 'w':
+                case 'W':
+                case 's':
+                case 'S':
+                    player1.dy = 0;
+                    break;
+            }
+        }
+
+        /**
+         * Adjusts canvas size and redraws elements on window resize.
+         */
+        function resizeCanvas() {
+            // Get the computed style of the canvas to determine its actual rendered size
+            const style = getComputedStyle(canvas);
+            const width = parseFloat(style.width);
+            const height = parseFloat(style.height);
+
+            // Set the canvas drawing buffer size to match its display size
+            canvas.width = width;
+            canvas.height = height;
+
+            // Recalculate paddle positions based on new canvas height
+            player1.y = canvas.height / 2 - player1.height / 2;
+            player2.y = canvas.height / 2 - player2.height / 2;
+            player2.x = canvas.width - player2.width; // Ensure right paddle stays on the right edge
+
+            // Reset ball position on resize to avoid it getting stuck
+            resetBall();
+            draw(); // Redraw with new dimensions
+        }
+
+        // Event listeners
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('resize', resizeCanvas);
+        startButton.addEventListener('click', startGame);
+        resetButton.addEventListener('click', resetGame);
+
+        // Initialize the game when the window loads
+        window.onload = function() {
+            resizeCanvas(); // Set initial canvas size
+            resetGame(); // Set initial game state and show start message
+        };
+    </script>
+</body>
+</html>
