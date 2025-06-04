@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gem Catcher Deluxe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a202c; /* Tailwind bg-gray-900 */
+            color: #e2e8f0; /* Tailwind text-gray-300 */
+            overflow: hidden;
+        }
+        #gameContainer {
+            border: 4px solid #4a5568; /* Tailwind border-gray-600 */
+            border-radius: 10px;
+            box-shadow: 0 0 25px rgba(0,255,255,0.6); /* Enhanced shadow */
+            position: relative;
+            background-color: #2d3748; /* Tailwind bg-gray-800 */
+        }
+        canvas {
+            display: block;
+            background-color: #2d3748; /* Tailwind bg-gray-800 */
+            border-radius: 6px;
+        }
+        .ui-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 10px 15px; /* Adjusted padding */
+            margin-bottom: 10px; /* Reduced margin */
+            color: #f7fafc;
+            background-color: #2c5282;
+            border-radius: 8px;
+            border: 2px solid #4299e1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .score-lives {
+            font-size: 1.2em; /* Adjusted for panel */
+        }
+        #messageOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75); /* Slightly darker */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border-radius: 6px;
+            z-index: 10;
+            color: white;
+        }
+        #messageOverlay h2 {
+            font-size: 2.2em; /* Adjusted */
+            margin-bottom: 15px;
+            color: #63b3ed;
+        }
+        #messageOverlay p {
+            font-size: 1.1em; /* Adjusted */
+            margin-bottom: 20px;
+        }
+        .button {
+            font-family: 'Press Start 2P', cursive;
+            color: white;
+            padding: 10px 20px; /* Adjusted */
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em; /* Adjusted */
+            cursor: pointer;
+            box-shadow: 0 3px #1c3d5a; /* Adjusted shadow */
+            transition: all 0.1s ease;
+            margin: 5px;
+        }
+        .button-green { background-color: #48bb78; box-shadow: 0 3px #2f855a; }
+        .button-green:hover { background-color: #38a169; transform: translateY(1px); box-shadow: 0 2px #2f855a; }
+        .button-green:active { transform: translateY(2px); box-shadow: 0 1px #2f855a; }
+
+        .button-blue { background-color: #4299e1; box-shadow: 0 3px #2b6cb0; }
+        .button-blue:hover { background-color: #3182ce; transform: translateY(1px); box-shadow: 0 2px #2b6cb0; }
+        .button-blue:active { transform: translateY(2px); box-shadow: 0 1px #2b6cb0; }
+
+        .controls-info {
+            margin-top: 15px; /* Adjusted */
+            font-size: 0.8em; /* Adjusted */
+            color: #a0aec0;
+            text-align: center;
+        }
+        #powerUpTimersDiv {
+            margin-top: 5px;
+            font-size: 0.7em;
+            color: #cbd5e0; /* Tailwind text-gray-400 */
+            text-align: center;
+            height: 20px; /* Reserve space */
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-panel">
+        <div class="score-lives">Score: <span id="score">0</span></div>
+        <button id="pauseButton" class="button button-blue">Pause</button>
+        <div class="score-lives">Lives: <span id="lives">3</span></div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="messageOverlay" style="display: none;">
+            <h2 id="gameMessage">Game Over!</h2>
+            <p id="finalScore">Your score: 0</p>
+            <button id="restartButton" class="button button-green">Restart Game</button>
+        </div>
+    </div>
+    <div id="powerUpTimersDiv"></div>
+
+    <div class="controls-info">
+        <p>Controls: Arrow Keys or Mouse/Touch (Drag)</p>
+        <p>Catch 💎🟢🟡 | Avoid 💣 | Power-ups: ↔️ (Wide) 2x (Score)</p>
+    </div>
+
+    <script>
+        // --- Game Setup ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const messageOverlay = document.getElementById('messageOverlay');
+        const gameMessage = document.getElementById('gameMessage');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const powerUpTimersDiv = document.getElementById('powerUpTimersDiv');
+
+        let canvasWidth = 600;
+        let canvasHeight = 400;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // --- Game State Variables ---
+        let score = 0;
+        let lives = 3;
+        let gameRunning = true;
+        let paused = false;
+        let fallers = []; // Unified array for gems, bombs, power-ups
+        let baseItemSpeed = 1.5; // Slower base speed
+        let itemSpeedMultiplier = 1; // Increases over time
+        let itemSpawnInterval = 1800; // milliseconds
+        let lastItemSpawnTime = 0;
+        let particles = [];
+
+        // --- Paddle (Player) ---
+        const paddle = {
+            baseWidth: 100,
+            width: 100,
+            height: 20,
+            x: canvasWidth / 2 - 50,
+            y: canvasHeight - 30,
+            color: '#4299e1', // Tailwind blue-500
+            speed: 15
+        };
+
+        // --- Item Properties ---
+        const itemTypes = {
+            GEM_DIAMOND: { type: 'gem', color: '#f56565', value: 10, emoji: '💎', radius: 15, weight: 3 },
+            GEM_EMERALD: { type: 'gem', color: '#48bb78', value: 5, emoji: '🟢', radius: 14, weight: 5 },
+            GEM_GOLD: { type: 'gem', color: '#ecc94b', value: 2, emoji: '🟡', radius: 13, weight: 7 }, // Increased value
+            BOMB: { type: 'bomb', color: '#718096', emoji: '💣', radius: 16, weight: 2.5 }, // Gray color for bomb body
+            POWER_PADDLE: { type: 'powerUpPaddle', color: '#9f7aea', emoji: '↔️', radius: 18, weight: 1.5, duration: 7000 }, // Purple
+            POWER_SCORE: { type: 'powerUpScore', color: '#ed8936', emoji: '2x', radius: 18, weight: 1.5, duration: 7000 }  // Orange
+        };
+        // Weighted list for spawning
+        const weightedItemTypes = [];
+        for (const key in itemTypes) {
+            for (let i = 0; i < (itemTypes[key].weight || 1); i++) {
+                weightedItemTypes.push(itemTypes[key]);
+            }
+        }
+
+        // --- Power-up State ---
+        let isPaddleWide = false;
+        let paddleWideTimeout;
+        let isScoreDoubled = false;
+        let scoreDoubleTimeout;
+
+        // --- Event Listeners ---
+        document.addEventListener('keydown', handleKeyDown);
+        canvas.addEventListener('mousemove', movePaddleMouse);
+        canvas.addEventListener('touchmove', movePaddleTouch, { passive: false });
+        restartButton.addEventListener('click', restartGame);
+        pauseButton.addEventListener('click', togglePause);
+
+        function handleKeyDown(e) {
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+            }
+            if (paused && e.key !== 'p' && e.key !== 'P') return; // Only allow unpause with P if paused by P
+            if (!gameRunning || paused) return;
+
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+                paddle.x -= paddle.speed;
+            } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+                paddle.x += paddle.speed;
+            }
+            keepPaddleInBounds();
+        }
+
+        function movePaddleMouse(e) {
+            if (!gameRunning || paused) return;
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = e.clientX - rect.left - paddle.width / 2;
+            keepPaddleInBounds();
+        }
+
+        function movePaddleTouch(e) {
+            if (!gameRunning || paused) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches.length > 0) {
+                paddle.x = e.touches[0].clientX - rect.left - paddle.width / 2;
+                keepPaddleInBounds();
+            }
+        }
+
+        function keepPaddleInBounds() {
+            if (paddle.x < 0) paddle.x = 0;
+            if (paddle.x + paddle.width > canvasWidth) paddle.x = canvasWidth - paddle.width;
+        }
+
+        // --- Item Logic ---
+        function createItem() {
+            const itemProto = weightedItemTypes[Math.floor(Math.random() * weightedItemTypes.length)];
+            fallers.push({
+                ...itemProto, // Spread prototype properties
+                x: Math.random() * (canvasWidth - itemProto.radius * 2) + itemProto.radius,
+                y: -itemProto.radius,
+                speed: (baseItemSpeed + Math.random() * 0.5) * itemSpeedMultiplier
+            });
+        }
+
+        function updateItems() {
+            for (let i = fallers.length - 1; i >= 0; i--) {
+                const item = fallers[i];
+                item.y += item.speed;
+
+                if (
+                    item.y + item.radius > paddle.y &&
+                    item.y - item.radius < paddle.y + paddle.height &&
+                    item.x + item.radius > paddle.x &&
+                    item.x - item.radius < paddle.x + paddle.width
+                ) { // Collision with paddle
+                    handleItemCollection(item);
+                    fallers.splice(i, 1);
+                } else if (item.y - item.radius > canvasHeight) { // Item missed
+                    if (item.type.startsWith('gem')) { // Only lose life for gems
+                        loseLife();
+                    }
+                    fallers.splice(i, 1);
+                }
+            }
+        }
+
+        function handleItemCollection(item) {
+            switch (item.type) {
+                case 'gem':
+                    const points = isScoreDoubled ? item.value * 2 : item.value;
+                    score += points;
+                    createParticles(item.x, paddle.y, item.color, points);
+                    break;
+                case 'bomb':
+                    createParticles(item.x, paddle.y, item.color, 0, true); // Explosion effect
+                    loseLife();
+                    break;
+                case 'powerUpPaddle':
+                    activatePaddleWide(item.duration);
+                    createParticles(item.x, paddle.y, item.color, 0);
+                    break;
+                case 'powerUpScore':
+                    activateScoreDouble(item.duration);
+                    createParticles(item.x, paddle.y, item.color, 0);
+                    break;
+            }
+        }
+        
+        function loseLife() {
+            lives--;
+            if (lives < 0) lives = 0; // Ensure lives don't go negative on display before game over
+            if (lives <= 0 && gameRunning) { // check gameRunning to prevent multiple calls
+                gameOver("Game Over!");
+            }
+        }
+
+
+        // --- Power-up Activations ---
+        function activatePaddleWide(duration) {
+            paddle.width = paddle.baseWidth * 1.6; // 60% wider
+            isPaddleWide = true;
+            clearTimeout(paddleWideTimeout); // Clear existing timer if any
+            paddleWideTimeout = setTimeout(() => {
+                paddle.width = paddle.baseWidth;
+                isPaddleWide = false;
+            }, duration);
+            updatePowerUpTimers();
+        }
+
+        function activateScoreDouble(duration) {
+            isScoreDoubled = true;
+            clearTimeout(scoreDoubleTimeout);
+            scoreDoubleTimeout = setTimeout(() => {
+                isScoreDoubled = false;
+            }, duration);
+            updatePowerUpTimers();
+        }
+        
+        function updatePowerUpTimers() {
+            let timerText = "";
+            if (isPaddleWide) timerText += `Wide Paddle: ${Math.ceil(paddleWideTimeout._idleTimeout / 1000)}s `;
+            if (isScoreDoubled) timerText += `2x Score: ${Math.ceil(scoreDoubleTimeout._idleTimeout / 1000)}s`;
+            powerUpTimersDiv.textContent = timerText.trim();
+        }
+
+
+        // --- Particle System ---
+        function createParticles(x, y, color, points, isExplosion = false) {
+            const count = isExplosion ? 30 : (points / 2 + 5); // More particles for higher points or explosion
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * (isExplosion ? 4 : 2) + 1,
+                    speedX: (Math.random() - 0.5) * (isExplosion ? 8 : 4),
+                    speedY: (Math.random() - 0.5) * (isExplosion ? 8 : 4) - (isExplosion ? 1 : 2), // Slight upward thrust
+                    color: color,
+                    life: isExplosion ? 60 : 30 // Frames
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.speedY += 0.1; // Gravity
+                p.life--;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / (p.life < 31 ? 30:60) ; // Fade out
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1; // Reset alpha
+        }
+
+
+        // --- Drawing Functions ---
+        function drawPaddle() {
+            ctx.fillStyle = paddle.color;
+            ctx.strokeStyle = '#2c5282';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, [8]);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawItems() {
+            fallers.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+                ctx.fillStyle = item.color;
+                ctx.fill();
+                ctx.closePath();
+
+                ctx.font = `${item.radius * (item.emoji === '2x' ? 1.2 : 1.5)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = item.type === 'bomb' ? 'white' : (item.emoji === '2x' ? 'white' : '#1a202c'); // Dark text for gems, white for bomb/2x
+                ctx.fillText(item.emoji, item.x, item.y + (item.emoji === '2x' ? 1 : 0)); // Slight y-offset for 2x
+            });
+        }
+
+        function drawUI() {
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+            if (gameRunning && !paused) { // Only update timers if game is active
+                 updatePowerUpTimers();
+            }
+        }
+
+        // --- Game Loop ---
+        let lastFrameTime = 0;
+        function gameLoop(currentTime) {
+            if (!gameRunning && !paused) { // Allow pause screen to persist if game over
+                 // If game over but was paused, ensure overlay shows
+                if (messageOverlay.style.display === 'none' && !gameRunning) {
+                    gameOver(lives <= 0 ? "Game Over!" : "Paused"); // Show generic message if paused then game ended
+                }
+                return;
+            }
+            
+            if (paused) {
+                requestAnimationFrame(gameLoop); // Keep loop running for unpause
+                return;
+            }
+
+            const deltaTime = currentTime - lastFrameTime;
+            lastFrameTime = currentTime;
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            if (currentTime - lastItemSpawnTime > itemSpawnInterval) {
+                createItem();
+                lastItemSpawnTime = currentTime;
+                if (itemSpawnInterval > 500) itemSpawnInterval -= 15; // Faster spawning
+                if (itemSpeedMultiplier < 2.5) itemSpeedMultiplier += 0.01; // Faster items
+            }
+
+            updateItems();
+            updateParticles();
+            drawPaddle();
+            drawItems();
+            drawParticles();
+            drawUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Game Over, Restart, Pause ---
+        function gameOver(messageText) {
+            if (!gameRunning) return; // Prevent multiple calls if already over
+
+            gameRunning = false; // Set gameRunning to false first
+            paused = false; // Ensure not paused on game over screen
+            pauseButton.textContent = "Pause";
+
+            gameMessage.textContent = messageText;
+            finalScoreDisplay.textContent = `Your final score: ${score}`;
+            messageOverlay.style.display = 'flex';
+
+            // Clear active power-ups visually and functionally
+            clearTimeout(paddleWideTimeout);
+            paddle.width = paddle.baseWidth;
+            isPaddleWide = false;
+            clearTimeout(scoreDoubleTimeout);
+            isScoreDoubled = false;
+            powerUpTimersDiv.textContent = "";
+        }
+
+
+        function restartGame() {
+            score = 0;
+            lives = 3;
+            fallers = [];
+            particles = [];
+            baseItemSpeed = 1.5;
+            itemSpeedMultiplier = 1;
+            itemSpawnInterval = 1800;
+            lastItemSpawnTime = performance.now(); // Use performance.now() forRAF consistency
+            paddle.x = canvasWidth / 2 - paddle.baseWidth / 2; // Use baseWidth
+            paddle.width = paddle.baseWidth; // Reset to baseWidth
+
+            clearTimeout(paddleWideTimeout);
+            isPaddleWide = false;
+            clearTimeout(scoreDoubleTimeout);
+            isScoreDoubled = false;
+            powerUpTimersDiv.textContent = "";
+            
+            gameRunning = true;
+            paused = false;
+            pauseButton.textContent = "Pause";
+            messageOverlay.style.display = 'none';
+            
+            drawUI();
+            lastFrameTime = performance.now(); // Reset lastFrameTime for deltaTime calculations
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            if (!gameRunning && messageOverlay.style.display === 'flex') return; // Don't allow pause if game over screen is up
+
+            paused = !paused;
+            if (paused) {
+                pauseButton.textContent = "Resume";
+                gameMessage.textContent = "Paused"; // Use gameMessage for pause text
+                finalScoreDisplay.textContent = `Current score: ${score}`; // Show current score
+                messageOverlay.style.display = 'flex';
+                // Do not show restart button on pause screen, hide it
+                restartButton.style.display = 'none';
+            } else {
+                pauseButton.textContent = "Pause";
+                messageOverlay.style.display = 'none';
+                restartButton.style.display = 'inline-block'; // Show restart button again
+                lastFrameTime = performance.now(); // Crucial: reset time to avoid jump
+                requestAnimationFrame(gameLoop); // Resume the loop explicitly
+            }
+        }
+        
+        // --- Polyfill for ctx.roundRect ---
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, radii) {
+                if (!Array.isArray(radii)) radii = [radii, radii, radii, radii];
+                else if (radii.length === 1) radii = [radii[0], radii[0], radii[0], radii[0]];
+                this.beginPath(); this.moveTo(x + radii[0], y);
+                this.lineTo(x + w - radii[1], y); this.quadraticCurveTo(x + w, y, x + w, y + radii[1]);
+                this.lineTo(x + w, y + h - radii[2]); this.quadraticCurveTo(x + w, y + h, x + w - radii[2], y + h);
+                this.lineTo(x + radii[3], y + h); this.quadraticCurveTo(x, y + h, x, y + h - radii[3]);
+                this.lineTo(x, y + radii[0]); this.quadraticCurveTo(x, y, x + radii[0], y);
+                this.closePath();
+            };
+        }
+
+        // --- Responsive Canvas ---
+        let originalCanvasWidth = 600; // Store original design width
+        let originalCanvasHeight = 400;
+
+        function resizeCanvas() {
+            const gameContainer = document.getElementById('gameContainer');
+            const uiPanel = document.querySelector('.ui-panel');
+            const controlsInfo = document.querySelector('.controls-info');
+            
+            const maxWidth = originalCanvasWidth;
+            // Calculate available width, considering padding/margins of parent elements if any
+            let availableWidth = window.innerWidth * 0.95; 
+            if (window.innerWidth >= 768) { // md breakpoint
+                availableWidth = window.innerWidth * 0.8;
+            }
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                 availableWidth = window.innerWidth * 0.7;
+            }
+            availableWidth = Math.min(maxWidth, availableWidth);
+
+            const aspectRatio = originalCanvasWidth / originalCanvasHeight;
+            const newWidth = availableWidth;
+            const newHeight = newWidth / aspectRatio;
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            // Update UI panel and controls width to match canvas
+            uiPanel.style.maxWidth = `${newWidth}px`;
+            controlsInfo.style.maxWidth = `${newWidth}px`;
+            powerUpTimersDiv.style.maxWidth = `${newWidth}px`;
+
+
+            const scaleFactor = newWidth / originalCanvasWidth;
+
+            paddle.baseWidth = 100 * scaleFactor;
+            paddle.width = isPaddleWide ? paddle.baseWidth * 1.6 : paddle.baseWidth;
+            paddle.height = 20 * scaleFactor;
+            paddle.speed = 15 * scaleFactor;
+            
+            // Rescale item radii based on original design values
+            for (const key in itemTypes) {
+                if(itemTypes[key].originalRadius === undefined) itemTypes[key].originalRadius = itemTypes[key].radius; // Store original if not yet stored
+                itemTypes[key].radius = itemTypes[key].originalRadius * scaleFactor;
+            }
+            // Note: Existing fallers in 'fallers' array won't have their radius updated by this.
+            // This is a simplification; a more robust solution would rescale existing fallers or clear and restart.
+            // For now, newly spawned items will have the correct scaled radius.
+
+            paddle.x = canvas.width / 2 - paddle.width / 2;
+            paddle.y = canvas.height - (30 * scaleFactor);
+
+            canvasWidth = newWidth; // Update global canvas dimension variables
+            canvasHeight = newHeight;
+
+            // Redraw if game is active or paused (to update pause screen elements)
+            if (gameRunning || paused) {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawPaddle();
+                drawItems();
+                drawParticles(); // Particles might need their positions rescaled too
+                drawUI();
+                if (paused) { // If paused, explicitly redraw the pause message elements if they were on canvas
+                    // This game draws pause message via HTML overlay, so less critical here for canvas.
+                }
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- Start Game ---
+        resizeCanvas(); // Initial resize
+        lastFrameTime = performance.now(); // Initialize lastFrameTime
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
