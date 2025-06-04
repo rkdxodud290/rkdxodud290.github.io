@@ -2,12 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong Game with AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pong Pro - Enhanced UI/UX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> {/* Font Awesome for icons */}
     <style>
         /* Import Inter font */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-primary: #1a1d24; /* Darker, richer background */
+            --bg-secondary: #252a33; /* Container background */
+            --bg-canvas: #0f1218; /* Canvas background */
+            --text-primary: #e0e6f0;
+            --text-secondary: #a0aec0;
+            --accent-primary: #4f80e1; /* Vibrant Blue */
+            --accent-secondary: #31c48d; /* Green for positive actions/difficulty */
+            --accent-danger: #e54848; /* Red for AI paddle/warnings */
+            --border-color: var(--accent-primary);
+            --shadow-color-light: rgba(79, 128, 225, 0.5);
+            --shadow-color-dark: rgba(0, 0, 0, 0.3);
+        }
 
         body {
             display: flex;
@@ -16,589 +31,961 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #1a202c; /* Dark background */
+            background-color: var(--bg-primary);
             font-family: 'Inter', sans-serif;
-            color: #e2e8f0; /* Light text color */
-            overflow: hidden; /* Prevent scrolling */
-            position: relative; /* For overlay */
+            color: var(--text-primary);
+            overflow: hidden;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .game-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem; /* Space for controls below */
+        }
+
+        canvas#pongCanvas {
+            background-color: var(--bg-canvas);
+            border: 3px solid var(--border-color);
+            border-radius: 1rem;
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            box-shadow: inset 0 0 25px rgba(79, 128, 225, 0.3); /* More subtle inset shadow */
+            z-index: 5;
+            position: relative; /* For overlay positioning */
+        }
+        /* Overlay for Pause/Game Over messages on canvas */
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 6; /* Above canvas, below touch controls if they were separate */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            border-radius: calc(1rem - 3px); /* Match canvas border-radius minus border width */
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0,0,0,0.7);
+        }
+        .canvas-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .canvas-overlay .final-score {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+
+        .touch-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+        }
+        .touch-area { flex-grow: 1; }
+
+
         .game-container {
-            background-color: #2d3748; /* Slightly lighter background for container */
-            border-radius: 1.5rem; /* More rounded corners */
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4); /* Stronger shadow */
-            padding: 2rem;
+            background-color: var(--bg-secondary);
+            border-radius: 1.25rem; /* Slightly adjusted */
+            box-shadow: 0 15px 30px var(--shadow-color-dark); /* Refined shadow */
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2rem;
-            max-width: 95vw; /* More responsive width */
-            margin: 1rem;
+            gap: 0.8rem;
+            max-width: 95vw;
+            width: 900px;
+            margin: 1rem auto;
             position: relative;
-            z-index: 1; /* Ensure container is above background effects if any */
+            z-index: 1;
+            border: 1px solid rgba(255,255,255,0.05); /* Subtle border */
         }
 
-        canvas {
-            background-color: #0d121c; /* Even darker canvas background */
-            border: 3px solid #63b3ed; /* More prominent, vibrant border */
-            border-radius: 1rem; /* Rounded corners for canvas */
-            display: block;
-            width: 100%; /* Fluid width */
-            max-width: 900px; /* Increased max width */
-            height: auto; /* Maintain aspect ratio */
-            aspect-ratio: 16 / 9; /* Standard aspect ratio for games */
-            box-shadow: inset 0 0 15px rgba(99, 179, 237, 0.5); /* Inner glow effect */
+        h1 {
+            color: var(--text-primary);
+            text-shadow: 0 0 12px var(--shadow-color-light);
+            margin-bottom: 0.2rem;
+            font-size: 2.2rem;
+            font-weight: 700;
         }
 
         .game-info {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around; /* Better spacing for scores */
             width: 100%;
-            max-width: 900px;
-            font-size: 1.75rem; /* Larger font size */
-            font-weight: 700;
-            color: #63b3ed; /* Vibrant score color */
-            text-shadow: 0 0 8px rgba(99, 179, 237, 0.7); /* Glow effect for scores */
+            font-size: 1.5rem;
+            font-weight: 600; /* Slightly bolder */
+            color: var(--text-primary);
+            padding: 0 0.5rem;
+        }
+        .game-info span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+        #player1-score { color: var(--accent-primary); }
+        #player2-score { color: var(--accent-danger); }
+
+        .rally-counter {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            text-align: center;
+            width: 100%;
+            margin-top: -0.25rem;
+            font-weight: 500;
         }
 
-        .controls {
+        .controls-main, .controls-settings {
             display: flex;
-            gap: 1.5rem; /* Increased gap */
+            gap: 0.8rem;
             width: 100%;
             justify-content: center;
             flex-wrap: wrap;
         }
+        .controls-settings {
+            margin-top: 0.25rem;
+            align-items: center;
+        }
+         .controls-settings label {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+         }
 
-        button {
-            background: linear-gradient(145deg, #4299e1, #3182ce); /* Gradient background */
+        button, select {
+            background: linear-gradient(145deg, var(--accent-primary), color-mix(in srgb, var(--accent-primary) 80%, black));
             color: white;
             border: none;
-            padding: 1rem 2rem; /* Larger padding */
-            border-radius: 1rem; /* More rounded corners */
-            font-size: 1.1rem; /* Slightly larger font */
-            font-weight: 700;
+            padding: 0.75rem 1.35rem;
+            border-radius: 0.6rem;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease-in-out; /* Slower transition */
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2), inset 0 -2px 1px rgba(0,0,0,0.1);
             outline: none;
             position: relative;
-            overflow: hidden; /* For ripple effect */
+            overflow: hidden;
+            display: inline-flex; /* For icon alignment */
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; /* Space between icon and text */
+        }
+        button i { line-height: 1; } /* Ensure icon aligns well */
+
+        select {
+            padding: 0.75rem 1rem;
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0aec0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 0.7rem center;
+            background-size: 1.2em;
         }
 
-        button:hover {
-            background: linear-gradient(145deg, #3182ce, #2c5282);
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.3);
+        button:hover, select:hover {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--accent-primary) 120%, white), var(--accent-primary));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3), inset 0 -1px 0px rgba(0,0,0,0.05);
         }
 
-        button:active {
-            transform: translateY(0);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        button:active, select:active {
+            transform: translateY(0px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25), inset 0 -2px 1px rgba(0,0,0,0.15);
         }
 
-        /* Ripple effect for buttons */
-        button::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            opacity: 0;
-            transform: scale(1) translate(-50%, -50%);
-            transition: transform 0.5s, opacity 0.5s;
+        /* Specific button colors */
+        #resetButton {
+             background: linear-gradient(145deg, var(--accent-danger), color-mix(in srgb, var(--accent-danger) 80%, black));
+        }
+        #resetButton:hover {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--accent-danger) 120%, white), var(--accent-danger));
+        }
+        select#difficultySelector {
+            background: linear-gradient(145deg, var(--accent-secondary), color-mix(in srgb, var(--accent-secondary) 80%, black));
+        }
+        select#difficultySelector:hover {
+            background: linear-gradient(145deg, color-mix(in srgb, var(--accent-secondary) 120%, white), var(--accent-secondary));
         }
 
-        button:active::after {
-            transform: scale(15) translate(-50%, -50%);
-            opacity: 1;
-            transition: 0s;
-        }
 
-        .message-box {
+        .message-box { /* This is the general game message box, not canvas overlay */
             position: fixed;
-            top: 50%;
+            bottom: 20px; /* Position at bottom */
             left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.9); /* Darker overlay */
-            color: white;
-            padding: 3rem; /* Larger padding */
-            border-radius: 1.5rem; /* More rounded */
+            transform: translateX(-50%);
+            background-color: rgba(37, 42, 51, 0.95); /* --bg-secondary with alpha */
+            backdrop-filter: blur(3px);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
             text-align: center;
-            font-size: 2rem; /* Larger font */
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 500;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.4s ease-in-out, visibility 0.4s ease-in-out;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3); /* White glow */
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transform: translate(-50%, 20px); /* Start off-screen for slide-in */
         }
 
         .message-box.show {
             opacity: 1;
             visibility: visible;
+            transform: translateX(-50%); /* Slide in */
         }
 
-        /* Responsive adjustments */
+
+        @media (max-width: 920px) {
+            .game-container { width: 95vw; padding: 1rem; }
+            h1 { font-size: 2rem; }
+            .game-info { font-size: 1.3rem; }
+        }
+
         @media (max-width: 768px) {
-            .game-info {
-                font-size: 1.25rem;
-                flex-direction: column;
-                align-items: center;
-                gap: 0.75rem;
-            }
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            button {
-                width: 90%;
-                padding: 0.8rem 1.5rem;
-            }
-            .message-box {
-                font-size: 1.5rem;
-                padding: 2rem;
-            }
+            h1 { font-size: 1.7rem; }
+            .game-info { font-size: 1rem; flex-direction: column; align-items: center; gap: 0.2rem; }
+            .rally-counter { font-size: 0.9rem; }
+            .controls-main, .controls-settings { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+            button, select { width: 100%; padding: 0.9rem 1rem; font-size: 0.95rem; }
+            .controls-settings label { text-align: center; margin-bottom: 0.1rem; font-size: 0.9rem;}
+            .canvas-overlay { font-size: 1.8rem; }
+            .canvas-overlay .final-score { font-size: 1.2rem; }
+            .message-box { width: 90vw; font-size: 0.9rem; padding: 0.6rem 1.2rem; }
+        }
+        @media (max-height: 480px) and (orientation: landscape) {
+            h1 { font-size: 1.3rem; margin-bottom: 0.05rem;}
+            .game-info { font-size: 0.8rem; gap: 0.1rem; flex-direction: row; justify-content: space-around;}
+            .rally-counter { font-size: 0.75rem; margin-top: -0.15rem; }
+            .controls-main, .controls-settings { gap: 0.3rem; flex-direction: row; flex-wrap: nowrap; }
+            button, select { font-size: 0.75rem; padding: 0.5rem 0.7rem; white-space: nowrap; gap: 0.3rem;}
+            button i { font-size: 0.8em; }
+            .controls-settings label { font-size: 0.75rem; margin-right: 0.2rem;}
+            .game-container { padding: 0.5rem; gap: 0.4rem;}
+            .canvas-overlay { font-size: 1.5rem; }
+            .canvas-overlay .final-score { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
+    <canvas id="particleCanvas"></canvas>
     <div class="game-container">
-        <h1>Pong Game with AI</h1>
+        <h1>Pong Pro</h1>
         <div class="game-info">
             <span id="player1-score">Player: 0</span>
             <span id="player2-score">Computer: 0</span>
         </div>
-        <canvas id="pongCanvas"></canvas>
-        <div class="controls">
-            <button id="startButton">Start Game</button>
-            <button id="resetButton">Reset Game</button>
+        <div class="rally-counter">Rally: <span id="rallyCount">0</span></div>
+
+        <div class="game-wrapper">
+            <canvas id="pongCanvas"></canvas>
+            <div class="canvas-overlay" id="canvasOverlay">
+                <span id="overlayMessage"></span>
+                <span id="overlaySubMessage" class="final-score"></span>
+            </div>
+            <div class="touch-controls">
+                <div class="touch-area" id="touchUpArea"></div>
+                <div class="touch-area" id="touchDownArea"></div>
+            </div>
+        </div>
+
+        <div class="controls-main">
+            <button id="startButton"><i class="fas fa-play"></i>Start</button>
+            <button id="pauseButton"><i class="fas fa-pause"></i>Pause</button>
+            <button id="resetButton"><i class="fas fa-undo"></i>Reset</button>
+        </div>
+        <div class="controls-settings">
+            <label for="difficultySelector">Difficulty: </label>
+            <select id="difficultySelector">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
         </div>
     </div>
 
-    <div id="messageBox" class="message-box"></div>
+    <div id="gameMessageBox" class="message-box"></div> {/* Renamed to avoid conflict with canvas message */}
 
     <script>
-        // Get the canvas element and its 2D rendering context
-        const canvas = document.getElementById('pongCanvas');
-        const ctx = canvas.getContext('2d');
+        // Canvas elements
+        const pongCanvas = document.getElementById('pongCanvas');
+        const pongCtx = pongCanvas.getContext('2d');
+        const particleCanvas = document.getElementById('particleCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
 
-        // Get score display elements
+        // UI Elements
         const player1ScoreDisplay = document.getElementById('player1-score');
         const player2ScoreDisplay = document.getElementById('player2-score');
-
-        // Get control buttons
+        const rallyCountDisplay = document.getElementById('rallyCount');
         const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
         const resetButton = document.getElementById('resetButton');
+        const difficultySelector = document.getElementById('difficultySelector');
+        const gameMessageBox = document.getElementById('gameMessageBox'); // General game messages
+        const canvasOverlay = document.getElementById('canvasOverlay');
+        const overlayMessage = document.getElementById('overlayMessage');
+        const overlaySubMessage = document.getElementById('overlaySubMessage');
 
-        // Get message box element
-        const messageBox = document.getElementById('messageBox');
-
-        // Game state variables
+        // Game State
         let gameRunning = false;
+        let gamePaused = false;
         let animationFrameId;
+        let rallyCount = 0;
+        let currentDifficulty = 'medium';
 
-        // Paddle properties
-        const paddleWidth = 12; // Slightly wider paddles
-        const paddleHeight = 110; // Slightly taller paddles
-        const paddleSpeed = 6; // Slightly faster paddle speed
-        const aiSpeed = 5; // AI paddle speed (slightly slower than player for challenge)
+        // Paddle Properties
+        const paddleWidth = 12;
+        const paddleHeight = 100;
+        const playerPaddleSpeed = 7.5; // Slightly faster player
+        let aiPaddleSpeed = 5; // Base AI speed
 
-        // Player 1 (left) paddle - Human Player
+        // Player 1 (Human)
         let player1 = {
-            x: 0,
-            y: canvas.height / 2 - paddleHeight / 2,
+            x: 15, // Slightly more offset
+            y: pongCanvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            dy: 0, // Vertical movement speed
+            dy: 0,
             score: 0,
-            hitEffect: 0 // For visual hit effect
+            hitEffect: 0,
+            color1: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+            color2: colorMix(getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(), '#000000', 0.7)
         };
 
-        // Player 2 (right) paddle - AI Player
+        // Player 2 (AI)
         let player2 = {
-            x: canvas.width - paddleWidth,
-            y: canvas.height / 2 - paddleHeight / 2,
+            x: pongCanvas.width - paddleWidth - 15, // Slightly more offset
+            y: pongCanvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            dy: 0, // Vertical movement speed
+            dy: 0,
             score: 0,
-            hitEffect: 0 // For visual hit effect
+            hitEffect: 0,
+            color1: getComputedStyle(document.documentElement).getPropertyValue('--accent-danger').trim(),
+            color2: colorMix(getComputedStyle(document.documentElement).getPropertyValue('--accent-danger').trim(), '#000000', 0.7)
         };
-
-        // Ball properties
+        
+        // Ball Properties
         let ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 8, // Slightly larger ball
-            dx: 6, // Slightly faster horizontal movement speed
-            dy: 6, // Slightly faster vertical movement speed
-            glowIntensity: 0 // For ball glow effect
+            x: pongCanvas.width / 2,
+            y: pongCanvas.height / 2,
+            radius: 9,
+            baseSpeedX: 5.8, // Slightly faster base
+            baseSpeedY: 5.8,
+            dx: 5.8,
+            dy: 5.8,
+            glowIntensity: 0,
+            trail: [],
+            color1: '#f6e05e', // Bright yellow center
+            color2: '#ecc94b'  // Darker yellow edge
         };
+        const MAX_TRAIL_LENGTH = 18; // Longer trail
 
-        // Sound effects using Tone.js
-        // Paddle hit sound
-        const paddleSynth = new Tone.Synth({
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.005, decay: 0.1, sustain: 0.01, release: 0.1 }
-        }).toDestination();
-
-        // Wall hit sound
-        const wallSynth = new Tone.Synth({
-            oscillator: { type: 'triangle' },
-            envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.1 }
-        }).toDestination();
-
-        // Score sound
-        const scoreSynth = new Tone.MembraneSynth().toDestination();
+        // Sound Effects
+        const paddleSynth = new Tone.Synth({ oscillator: { type: 'square6' }, volume: -8, envelope: { attack: 0.004, decay: 0.07, sustain: 0.01, release: 0.08 } }).toDestination();
+        const wallSynth = new Tone.Synth({ oscillator: { type: 'triangle4' }, volume: -12, envelope: { attack: 0.008, decay: 0.1, sustain: 0.02, release: 0.1 } }).toDestination();
+        const scoreSynth = new Tone.MembraneSynth({ pitchDecay: 0.015, octaves: 6, volume: -6, envelope: { attack: 0.001, decay: 0.25, sustain: 0.01 } }).toDestination();
+        const pauseSynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, volume: -10, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+        const uiClickSynth = new Tone.Synth({ oscillator: {type: 'sine'}, volume: -15, envelope: {attack: 0.001, decay: 0.05, sustain: 0, release: 0.1}}).toDestination();
 
 
-        /**
-         * Plays a sound effect.
-         * @param {Tone.Synth} synth - The Tone.js synthesizer to use.
-         * @param {string} note - The musical note to play (e.g., 'C4').
-         * @param {number} duration - The duration of the note in seconds.
-         */
-        function playSound(synth, note, duration) {
-            synth.triggerAttackRelease(note, duration);
+        // --- Utility: Color Mixer (basic) ---
+        function colorMix(color1, color2, weight) {
+            function d2h(d) { return d.toString(16); }
+            function h2d(h) { return parseInt(h, 16); }
+            weight = (typeof(weight) !== 'undefined') ? weight : 0.5;
+            var c1 = color1.replace('#','');
+            var c2 = color2.replace('#','');
+            var mixed = "#";
+            for(var i = 0; i <= 2; i++) {
+                var C1 = h2d(c1.substr(i*2,2));
+                var C2 = h2d(c2.substr(i*2,2));
+                var C = Math.round((C1 * (1-weight)) + (C2 * weight));
+                var c = d2h(C);
+                while(c.length < 2) { c = "0" + c; }
+                mixed += c;
+            }
+            return mixed;
         }
 
-        /**
-         * Displays a message in a custom message box.
-         * @param {string} message - The message to display.
-         * @param {number} duration - How long the message should be visible in milliseconds. Set to 0 for persistent.
-         */
-        function showMessage(message, duration = 2000) {
-            messageBox.textContent = message;
-            messageBox.classList.add('show');
+
+        // Particle Background
+        let particlesArray = [];
+        const numberOfParticles = 40;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * particleCanvas.width;
+                this.y = Math.random() * particleCanvas.height;
+                this.size = Math.random() * 1.8 + 0.6;
+                this.speedX = Math.random() * 0.3 - 0.15;
+                this.speedY = Math.random() * 0.3 - 0.15;
+                this.color = `rgba(79, 128, 225, ${Math.random() * 0.2 + 0.05})`; // Using accent color
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > particleCanvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > particleCanvas.height) this.speedY *= -1;
+            }
+            draw() {
+                particleCtx.fillStyle = this.color;
+                particleCtx.beginPath();
+                particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                particleCtx.fill();
+            }
+        }
+
+        function initParticles() {
+            particlesArray = [];
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        function handleParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+        }
+
+        function playSound(synth, note, duration) {
+            let scheduledTime = Tone.now() + 0.01; // Define scheduledTime here to use in catch block
+            try {
+                if (Tone && Tone.context && Tone.context.state !== 'running') {
+                    Tone.start().catch(e => {
+                        console.error("Error starting Tone.js audio context:", e);
+                        // Potentially disable sounds or notify user if context can't start
+                    });
+                }
+
+                // Ensure the synth is ready for a new sound, especially for rapid re-triggers
+                if (typeof synth.triggerRelease === 'function') {
+                    // Release any currently playing note on this synth instance.
+                    // Schedule this release to happen "now".
+                    synth.triggerRelease(Tone.now());
+                }
+
+                // Schedule the new note to start slightly in the future.
+                // This helps avoid the "Start time must be strictly greater" error.
+                synth.triggerAttackRelease(note, duration, scheduledTime);
+
+            } catch (error) {
+                let synthName = 'UnknownSynth';
+                if (synth === paddleSynth) synthName = 'paddleSynth';
+                else if (synth === wallSynth) synthName = 'wallSynth';
+                else if (synth === scoreSynth) synthName = 'scoreSynth';
+                else if (synth === pauseSynth) synthName = 'pauseSynth';
+                else if (synth === uiClickSynth) synthName = 'uiClickSynth';
+                // Log detailed error information
+                console.error(
+                    `Sound error: ${error.message}\n` + // Added newline for better readability in console
+                    `Synth: ${synthName}\n` +
+                    `Note: ${note}\n` +
+                    `Duration: ${duration}\n` +
+                    `Context State: ${Tone.context ? Tone.context.state : 'N/A'}\n` +
+                    `Tone.now(): ${Tone.now()}\n` +
+                    `Scheduled Time: ${scheduledTime}\n`, // Log scheduledTime
+                    error.stack // Log the full stack trace
+                );
+            }
+        }
+
+
+        function showGameMessage(message, duration = 2200) { // For general messages
+            gameMessageBox.textContent = message;
+            gameMessageBox.classList.add('show');
             if (duration > 0) {
                 setTimeout(() => {
-                    messageBox.classList.remove('show');
+                    gameMessageBox.classList.remove('show');
                 }, duration);
             }
         }
-
-        /**
-         * Resets the ball to the center and gives it a random direction.
-         */
-        function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            // Randomize ball direction horizontally
-            ball.dx = (Math.random() < 0.5 ? 1 : -1) * 6; // Initial speed
-            // Randomize ball direction vertically
-            ball.dy = (Math.random() < 0.5 ? 1 : -1) * 6; // Initial speed
-            ball.glowIntensity = 0; // Reset glow
-        }
-
-        /**
-         * Resets the entire game state, including scores and paddle positions.
-         */
-        function resetGame() {
-            gameRunning = false;
-            cancelAnimationFrame(animationFrameId); // Stop any ongoing animation
-            player1.score = 0;
-            player2.score = 0;
-            updateScores();
-            player1.y = canvas.height / 2 - paddleHeight / 2;
-            player2.y = canvas.height / 2 - paddleHeight / 2;
-            player1.hitEffect = 0;
-            player2.hitEffect = 0;
-            resetBall();
-            draw(); // Draw the initial state
-            showMessage("Game Reset! Press 'Start Game' to play.", 0); // Show persistent message
-        }
-
-        /**
-         * Starts the game loop.
-         */
-        function startGame() {
-            if (!gameRunning) {
-                gameRunning = true;
-                messageBox.classList.remove('show'); // Hide message box
-                animate(); // Start the animation loop
+        function showCanvasMessage(mainText, subText = "", persistent = false) {
+            overlayMessage.textContent = mainText;
+            overlaySubMessage.textContent = subText;
+            canvasOverlay.classList.add('show');
+            if (!persistent) {
+                setTimeout(() => {
+                     if (overlayMessage.textContent === mainText) { // Only hide if it's still the same message
+                        hideCanvasMessage();
+                     }
+                }, 2000); // Default duration for non-persistent canvas messages
             }
         }
-
-        /**
-         * Draws a rectangle with a gradient and optional glow.
-         * @param {number} x - X coordinate of the top-left corner.
-         * @param {number} y - Y coordinate of the top-left corner.
-         * @param {number} width - Width of the rectangle.
-         * @param {number} height - Height of the rectangle.
-         * @param {string} color1 - Start color of the gradient.
-         * @param {string} color2 - End color of the gradient.
-         * @param {number} hitEffect - Intensity of the hit effect (0-1).
-         */
-        function drawPaddle(x, y, width, height, color1, color2, hitEffect) {
-            // Create a linear gradient
-            const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            ctx.fillStyle = gradient;
-            ctx.fillRect(x, y, width, height);
-
-            // Add a subtle glow effect
-            ctx.shadowColor = color1;
-            ctx.shadowBlur = 10 + hitEffect * 10; // More blur on hit
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            ctx.fillRect(x, y, width, height); // Redraw to apply shadow
-
-            ctx.shadowBlur = 0; // Reset shadow
+        function hideCanvasMessage() {
+            canvasOverlay.classList.remove('show');
         }
 
-        /**
-         * Draws a circle with a gradient and glow.
-         * @param {number} x - X coordinate of the center.
-         * @param {number} y - Y coordinate of the center.
-         * @param {number} radius - Radius of the circle.
-         * @param {string} color1 - Start color of the gradient.
-         * @param {string} color2 - End color of the gradient.
-         * @param {number} glowIntensity - Intensity of the glow (0-1).
-         */
-        function drawBall(x, y, radius, color1, color2, glowIntensity) {
-            // Create radial gradient for the ball
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
-            ctx.fillStyle = gradient;
 
-            // Draw the ball
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
-            ctx.fill();
-
-            // Add glow effect
-            ctx.shadowColor = color1;
-            ctx.shadowBlur = 15 * glowIntensity; // Adjust glow intensity
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            ctx.fill(); // Redraw to apply shadow
-
-            ctx.shadowBlur = 0; // Reset shadow
-        }
-
-        /**
-         * Updates the score displays on the UI.
-         */
         function updateScores() {
             player1ScoreDisplay.textContent = `Player: ${player1.score}`;
             player2ScoreDisplay.textContent = `Computer: ${player2.score}`;
+            rallyCountDisplay.textContent = rallyCount;
         }
 
-        /**
-         * Draws all game elements on the canvas.
-         */
-        function draw() {
-            // Clear the canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw paddles with gradients and hit effects
-            drawPaddle(player1.x, player1.y, player1.width, player1.height, '#63b3ed', '#3182ce', player1.hitEffect); // Blue paddle
-            drawPaddle(player2.x, player2.y, player2.width, player2.height, '#fc8181', '#e53e3e', player2.hitEffect); // Red paddle
-
-            // Draw ball with gradient and glow
-            drawBall(ball.x, ball.y, ball.radius, '#f6e05e', '#ecc94b', ball.glowIntensity); // Yellow ball
-
-            // Draw dashed line in the middle
-            ctx.strokeStyle = '#4a5568'; // Darker grey
-            ctx.setLineDash([15, 15]); // Larger dashed pattern
-            ctx.lineWidth = 2; // Thicker line
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, 0);
-            ctx.lineTo(canvas.width / 2, canvas.height);
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset line dash
-            ctx.lineWidth = 1; // Reset line width
+        function setDifficulty(level) {
+            currentDifficulty = level;
+            switch (level) {
+                case 'easy':
+                    aiPaddleSpeed = 3.5;
+                    ball.baseSpeedX = 5.0;
+                    ball.baseSpeedY = 5.0;
+                    break;
+                case 'medium':
+                    aiPaddleSpeed = 5.0;
+                    ball.baseSpeedX = 5.8;
+                    ball.baseSpeedY = 5.8;
+                    break;
+                case 'hard':
+                    aiPaddleSpeed = 7.5; // AI matches player speed
+                    ball.baseSpeedX = 6.8;
+                    ball.baseSpeedY = 6.8;
+                    break;
+            }
+            if (!gameRunning && !gamePaused) resetBall();
         }
 
-        /**
-         * Updates the game state (paddle and ball positions, collisions).
-         */
-        function update() {
-            // Update paddle positions
-            player1.y += player1.dy;
-            // AI logic for Player 2
-            if (ball.dx > 0) { // Only move AI if ball is coming towards its side
-                const paddleCenter = player2.y + player2.height / 2;
-                if (paddleCenter < ball.y - 10) { // Ball is below paddle center (with a small buffer)
-                    player2.dy = aiSpeed;
-                } else if (paddleCenter > ball.y + 10) { // Ball is above paddle center (with a small buffer)
-                    player2.dy = -aiSpeed;
-                } else {
-                    player2.dy = 0; // Stop if aligned
+        function resetBall(scored = false) {
+            ball.x = pongCanvas.width / 2;
+            ball.y = pongCanvas.height / 2;
+            ball.dx = (Math.random() < 0.5 ? 1 : -1) * ball.baseSpeedX;
+            // Ensure some vertical movement, not too flat
+            let initialDY = (Math.random() * 0.5 + 0.5) * ball.baseSpeedY; // 50% to 100% of base Y speed
+            ball.dy = (Math.random() < 0.5 ? 1 : -1) * initialDY;
+
+            ball.glowIntensity = 0;
+            ball.trail = [];
+            if (!scored) rallyCount = 0;
+            updateScores();
+        }
+
+        function resetGame() {
+            playSound(uiClickSynth, 'C3', '32n');
+            gameRunning = false;
+            gamePaused = false;
+            pauseButton.innerHTML = '<i class="fas fa-pause"></i>Pause';
+            cancelAnimationFrame(animationFrameId);
+            player1.score = 0;
+            player2.score = 0;
+            rallyCount = 0;
+            updateScores();
+            player1.y = pongCanvas.height / 2 - paddleHeight / 2;
+            player2.y = pongCanvas.height / 2 - paddleHeight / 2;
+            player1.hitEffect = 0;
+            player2.hitEffect = 0;
+            setDifficulty(difficultySelector.value);
+            resetBall();
+            hideCanvasMessage();
+            draw();
+            showGameMessage("Game Reset. Select Difficulty & Start.", 3000);
+            startButton.disabled = false;
+            difficultySelector.disabled = false;
+        }
+
+        function startGame() {
+            playSound(uiClickSynth, 'C4', '32n');
+            if (!gameRunning) {
+                if (Tone && Tone.context && Tone.context.state !== 'running') {
+                     Tone.start().then(() => console.log("Audio context started.")).catch(e => console.error("Error starting Tone context in startGame:", e));
                 }
+                gameRunning = true;
+                gamePaused = false;
+                hideCanvasMessage();
+                showGameMessage("Game Started!", 1500);
+                startButton.disabled = true;
+                difficultySelector.disabled = true;
+                resetBall();
+                animate();
+            }
+        }
+
+        function togglePauseGame() {
+            playSound(uiClickSynth, 'G3', '32n');
+            if (!gameRunning && !gamePaused) return;
+
+            gamePaused = !gamePaused;
+            if (gamePaused) {
+                cancelAnimationFrame(animationFrameId);
+                showCanvasMessage("PAUSED", "Press 'P' or Resume to continue", true);
+                pauseButton.innerHTML = '<i class="fas fa-play"></i>Resume';
+                playSound(pauseSynth, 'C3', '8n');
             } else {
-                // If ball is going away, slowly recenter the AI paddle
-                const centerOfCanvas = canvas.height / 2 - player2.height / 2;
-                if (player2.y < centerOfCanvas - 5) {
-                    player2.dy = aiSpeed / 2;
-                } else if (player2.y > centerOfCanvas + 5) {
-                    player2.dy = -aiSpeed / 2;
-                } else {
-                    player2.dy = 0;
-                }
+                hideCanvasMessage();
+                pauseButton.innerHTML = '<i class="fas fa-pause"></i>Pause';
+                playSound(pauseSynth, 'G3', '8n');
+                animate();
+            }
+        }
+
+        function drawPaddle(x, y, width, height, color1, color2, hitEffect) {
+            const gradient = pongCtx.createLinearGradient(x, y, x + width, y + height);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            pongCtx.fillStyle = gradient;
+            pongCtx.shadowColor = colorMix(color1, '#FFFFFF', 0.3); // Lighter glow
+            pongCtx.shadowBlur = 10 + hitEffect * 15; // More pronounced hit glow
+            pongCtx.shadowOffsetX = 0;
+            pongCtx.shadowOffsetY = 0;
+            pongCtx.fillRect(x, y, width, height);
+            pongCtx.shadowBlur = 0; // Reset shadow
+        }
+
+        function drawBallAndTrail() {
+            // Draw trail
+            for (let i = 0; i < ball.trail.length; i++) {
+                const pos = ball.trail[i];
+                const opacity = (i / ball.trail.length) * 0.35; // Subtler trail
+                pongCtx.fillStyle = `rgba(246, 224, 94, ${opacity})`;
+                pongCtx.beginPath();
+                pongCtx.arc(pos.x, pos.y, ball.radius * (i / ball.trail.length) * 0.7, 0, Math.PI * 2);
+                pongCtx.fill();
+            }
+
+            // Draw ball
+            const gradient = pongCtx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, ball.radius);
+            gradient.addColorStop(0, ball.color1);
+            gradient.addColorStop(0.8, ball.color2); // Sharper gradient
+            pongCtx.fillStyle = gradient;
+
+            pongCtx.shadowColor = ball.color1;
+            pongCtx.shadowBlur = 12 * ball.glowIntensity + 5; // Base glow + pulse
+            pongCtx.beginPath();
+            pongCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            pongCtx.fill();
+            pongCtx.shadowBlur = 0;
+        }
+
+        function drawNet() {
+            pongCtx.strokeStyle = 'rgba(160, 174, 192, 0.3)'; // --text-secondary with alpha
+            pongCtx.setLineDash([7, 12]); // More stylized dashes
+            pongCtx.lineWidth = 2.5;
+            pongCtx.beginPath();
+            pongCtx.moveTo(pongCanvas.width / 2, 0);
+            pongCtx.lineTo(pongCanvas.width / 2, pongCanvas.height);
+            pongCtx.stroke();
+            pongCtx.setLineDash([]);
+            pongCtx.lineWidth = 1;
+        }
+
+        function draw() {
+            pongCtx.clearRect(0, 0, pongCanvas.width, pongCanvas.height);
+            drawNet();
+            drawPaddle(player1.x, player1.y, player1.width, player1.height, player1.color1, player1.color2, player1.hitEffect);
+            drawPaddle(player2.x, player2.y, player2.width, player2.height, player2.color1, player2.color2, player2.hitEffect);
+            drawBallAndTrail();
+        }
+
+        function update() {
+            if (gamePaused) return;
+
+            player1.y += player1.dy;
+
+            // AI Logic
+            if (ball.dx > 0) { // AI moves when ball is on its half or approaching
+                const paddleCenter = player2.y + player2.height / 2;
+                const targetY = ball.y;
+                // Add some imperfection/prediction based on difficulty
+                let reactionOffset = 0; // How far the ball must be from center for AI to react
+                let predictionError = 0; // How much AI misjudges ball's final Y
+                if (currentDifficulty === 'easy') { reactionOffset = 35; predictionError = Math.random() * 40 - 20; }
+                if (currentDifficulty === 'medium') { reactionOffset = 20; predictionError = Math.random() * 25 - 12.5; }
+                // Hard AI has minimal error
+
+                if (paddleCenter < targetY + predictionError - reactionOffset) player2.dy = aiPaddleSpeed;
+                else if (paddleCenter > targetY + predictionError + reactionOffset) player2.dy = -aiPaddleSpeed;
+                else player2.dy = 0;
+            } else { // Ball moving away from AI
+                const centerOfCanvas = pongCanvas.height / 2;
+                const paddleCenter = player2.y + player2.height / 2;
+                if (paddleCenter < centerOfCanvas - 15) player2.dy = aiPaddleSpeed * 0.6; // Slower recentering
+                else if (paddleCenter > centerOfCanvas + 15) player2.dy = -aiPaddleSpeed * 0.6;
+                else player2.dy = 0;
             }
             player2.y += player2.dy;
 
 
-            // Keep paddles within canvas bounds
-            player1.y = Math.max(0, Math.min(canvas.height - player1.height, player1.y));
-            player2.y = Math.max(0, Math.min(canvas.height - player2.height, player2.y));
+            player1.y = Math.max(0, Math.min(pongCanvas.height - player1.height, player1.y));
+            player2.y = Math.max(0, Math.min(pongCanvas.height - player2.height, player2.y));
 
-            // Update ball position
             ball.x += ball.dx;
             ball.y += ball.dy;
 
-            // Ball glow effect animation
-            ball.glowIntensity = Math.sin(Date.now() * 0.005) * 0.5 + 0.5; // Pulsating glow
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > MAX_TRAIL_LENGTH) ball.trail.shift();
 
-            // Decrease hit effect over time
-            player1.hitEffect = Math.max(0, player1.hitEffect - 0.05);
-            player2.hitEffect = Math.max(0, player2.hitEffect - 0.05);
+            ball.glowIntensity = Math.sin(Date.now() * 0.006) * 0.5 + 0.5; // Sine wave for pulsing
+            player1.hitEffect = Math.max(0, player1.hitEffect - 0.035); // Slower fade for hit effect
+            player2.hitEffect = Math.max(0, player2.hitEffect - 0.035);
 
             // Ball collision with top/bottom walls
-            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
-                ball.dy *= -1; // Reverse vertical direction
-                playSound(wallSynth, 'D4', '8n'); // Play wall hit sound
+            if (ball.y + ball.radius > pongCanvas.height || ball.y - ball.radius < 0) {
+                ball.dy *= -1;
+                playSound(wallSynth, 'D2', '24n');
+                ball.y = (ball.y - ball.radius < 0) ? ball.radius : pongCanvas.height - ball.radius; // Prevent sticking
             }
 
             // Ball collision with paddles
-            // Player 1 paddle (left)
-            if (ball.dx < 0 && // Ball is moving left
-                ball.x - ball.radius < player1.x + player1.width && // Ball is at or past paddle's right edge
-                ball.y + ball.radius > player1.y && // Ball is below paddle's top edge
-                ball.y - ball.radius < player1.y + player1.height) { // Ball is above paddle's bottom edge
-                ball.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
-                ball.dy *= 1.05; // Slightly increase vertical speed
-                player1.hitEffect = 1; // Activate hit effect
-                playSound(paddleSynth, 'C5', '16n'); // Play paddle hit sound
-                // Adjust ball position to prevent sticking
-                ball.x = player1.x + player1.width + ball.radius;
+            let hit = false;
+            let hitSpeedMultiplier = 1.025; // Base speed increase on hit
+            // Player 1
+            if (ball.dx < 0 && ball.x - ball.radius < player1.x + player1.width && ball.x - ball.radius > player1.x &&
+                ball.y + ball.radius > player1.y && ball.y - ball.radius < player1.y + player1.height) {
+                hit = true;
+                player1.hitEffect = 1;
+            }
+            // Player 2
+            else if (ball.dx > 0 && ball.x + ball.radius > player2.x && ball.x + ball.radius < player2.x + player2.width &&
+                ball.y + ball.radius > player2.y && ball.y - ball.radius < player2.y + player2.height) {
+                hit = true;
+                player2.hitEffect = 1;
+                if (currentDifficulty === 'hard') hitSpeedMultiplier = 1.035; // Hard AI hits harder
             }
 
-            // Player 2 paddle (right)
-            if (ball.dx > 0 && // Ball is moving right
-                ball.x + ball.radius > player2.x && // Ball is at or past paddle's left edge
-                ball.y + ball.radius > player2.y && // Ball is below paddle's top edge
-                ball.y - ball.radius < player2.y + player2.height) { // Ball is above paddle's bottom edge
-                ball.dx *= -1.05; // Reverse horizontal direction and slightly increase speed
-                ball.dy *= 1.05; // Slightly increase vertical speed
-                player2.hitEffect = 1; // Activate hit effect
-                playSound(paddleSynth, 'C5', '16n'); // Play paddle hit sound
-                // Adjust ball position to prevent sticking
-                ball.x = player2.x - ball.radius;
+            if (hit) {
+                ball.dx *= -hitSpeedMultiplier;
+                // Make speeds absolute before capping, then reapply sign
+                let currentSpeedXAbs = Math.abs(ball.dx);
+                let currentSpeedYAbs = Math.abs(ball.dy);
+                const maxSpeed = ball.baseSpeedX * 2.5; // Max speed cap
+                ball.dx = Math.sign(ball.dx) * Math.min(currentSpeedXAbs, maxSpeed);
+
+                let hitSpot = (ball.y - (ball.dx > 0 ? player1.y : player2.y)) / paddleHeight; // 0 to 1
+                hitSpot = Math.max(0.05, Math.min(0.95, hitSpot));
+                let angleFactor = (currentDifficulty === 'hard') ? 12 : 10; // How much angle is imparted
+                let newDy = (hitSpot - 0.5) * angleFactor;
+
+                // Add a portion of existing dy to newDy to make it feel more natural
+                ball.dy = newDy * 0.7 + ball.dy * 0.3;
+                ball.dy = Math.sign(ball.dy) * Math.min(Math.abs(ball.dy), ball.baseSpeedY * 1.8); // Cap vertical speed
+
+
+                playSound(paddleSynth, 'C4', '24n');
+                rallyCount++;
+                updateScores();
+                ball.x = (ball.dx < 0) ? player2.x - ball.radius -1 : player1.x + player1.width + ball.radius + 1;
             }
 
-            // Ball out of bounds (scoring)
-            if (ball.x - ball.radius < -10) { // Ball went past left wall (Player 2 scores)
+
+            // Scoring
+            const WINNING_SCORE = 5;
+            if (ball.x - ball.radius < -20) { // Player 2 scores
                 player2.score++;
-                updateScores();
-                playSound(scoreSynth, 'G3', '4n'); // Play score sound
-                if (player2.score >= 5) { // Win condition
-                    showMessage("Computer Wins! Press 'Reset Game' to play again.");
-                    gameRunning = false;
-                    cancelAnimationFrame(animationFrameId);
+                playSound(scoreSynth, 'E2', '8n');
+                resetBall(true);
+                if (player2.score >= WINNING_SCORE) {
+                    showCanvasMessage("COMPUTER WINS!", `${player1.score} - ${player2.score}`, true);
+                    endGame();
                 } else {
-                    showMessage("Computer Scored!");
-                    resetBall();
+                    showGameMessage("Computer Scored!", 1500);
                 }
-            } else if (ball.x + ball.radius > canvas.width + 10) { // Ball went past right wall (Player 1 scores)
+            } else if (ball.x + ball.radius > pongCanvas.width + 20) { // Player 1 scores
                 player1.score++;
-                updateScores();
-                playSound(scoreSynth, 'G3', '4n'); // Play score sound
-                if (player1.score >= 5) { // Win condition
-                    showMessage("Player Wins! Press 'Reset Game' to play again.");
-                    gameRunning = false;
-                    cancelAnimationFrame(animationFrameId);
+                playSound(scoreSynth, 'A2', '8n');
+                resetBall(true);
+                if (player1.score >= WINNING_SCORE) {
+                    showCanvasMessage("PLAYER WINS!", `${player1.score} - ${player2.score}`, true);
+                    endGame();
                 } else {
-                    showMessage("Player Scored!");
-                    resetBall();
+                    showGameMessage("Player Scored!", 1500);
                 }
             }
+            updateScores();
         }
 
-        /**
-         * Main game loop. Updates game state and redraws elements.
-         */
+        function endGame() {
+            gameRunning = false;
+            gamePaused = false;
+            cancelAnimationFrame(animationFrameId);
+            startButton.disabled = false;
+            difficultySelector.disabled = false;
+        }
+
         function animate() {
-            if (gameRunning) {
+            if (gameRunning && !gamePaused) {
                 update();
                 draw();
-                animationFrameId = requestAnimationFrame(animate); // Request next frame
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            handleParticles();
+            if (!gameRunning && !gamePaused && !canvasOverlay.classList.contains('show')) { // Keep particles if game stopped but no persistent overlay
+                 requestAnimationFrame(animate);
+            } else if (canvasOverlay.classList.contains('show')) { // If overlay is shown (paused/game over), still draw particles once
+                 handleParticles(); // Then stop requesting frames if game not running
             }
         }
 
-        /**
-         * Handles keyboard input for paddle movement.
-         * @param {KeyboardEvent} event - The keyboard event object.
-         */
+
         function handleKeyDown(event) {
-            switch (event.key) {
-                // Player 1 controls (W, S)
-                case 'w':
-                case 'W':
-                    player1.dy = -paddleSpeed;
-                    break;
-                case 's':
-                case 'S':
-                    player1.dy = paddleSpeed;
-                    break;
+            if (event.key === 'Enter' && !gameRunning && !gamePaused) startGame();
+            else if (event.key.toLowerCase() === 'r') resetGame();
+            else if (event.key.toLowerCase() === 'p' && (gameRunning || gamePaused)) togglePauseGame();
+
+            if (!gamePaused && gameRunning) {
+                switch (event.key.toLowerCase()) {
+                    case 'w': player1.dy = -playerPaddleSpeed; break;
+                    case 's': player1.dy = playerPaddleSpeed; break;
+                }
             }
         }
-
-        /**
-         * Stops paddle movement when key is released.
-         * @param {KeyboardEvent} event - The keyboard event object.
-         */
         function handleKeyUp(event) {
-            switch (event.key) {
-                case 'w':
-                case 'W':
-                case 's':
-                case 'S':
-                    player1.dy = 0;
-                    break;
+            if (!gamePaused && gameRunning) {
+                switch (event.key.toLowerCase()) {
+                    case 'w': case 's': player1.dy = 0; break;
+                }
             }
         }
 
-        /**
-         * Adjusts canvas size and redraws elements on window resize.
-         */
-        function resizeCanvas() {
-            // Get the computed style of the canvas to determine its actual rendered size
-            const style = getComputedStyle(canvas);
-            const width = parseFloat(style.width);
-            const height = parseFloat(style.height);
-
-            // Set the canvas drawing buffer size to match its display size
-            canvas.width = width;
-            canvas.height = height;
-
-            // Recalculate paddle positions based on new canvas height
-            player1.y = canvas.height / 2 - player1.height / 2;
-            player2.y = canvas.height / 2 - player2.height / 2;
-            player2.x = canvas.width - player2.width; // Ensure right paddle stays on the right edge
-
-            // Reset ball position on resize to avoid it getting stuck
-            resetBall();
-            draw(); // Redraw with new dimensions
+        function handleTouchStart(event) {
+            event.preventDefault();
+            if (Tone && Tone.context && Tone.context.state !== 'running') {
+                 Tone.start().then(() => {}).catch(e => console.error("Error starting Tone context in touchStart:", e));
+            }
+            if (!gameRunning || gamePaused) return;
+            const touch = event.touches[0];
+            const rect = pongCanvas.getBoundingClientRect();
+            if (touch.clientX - rect.left < pongCanvas.width / 2) { // Touch on left half for player1
+                 if (touch.clientY - rect.top < pongCanvas.height / 2) player1.dy = -playerPaddleSpeed;
+                 else player1.dy = playerPaddleSpeed;
+            }
+        }
+        function handleTouchMove(event) {
+            event.preventDefault();
+            if (!gameRunning || gamePaused) return;
+            const touch = event.touches[0];
+            const rect = pongCanvas.getBoundingClientRect();
+            if (touch.clientX - rect.left < pongCanvas.width / 2) {
+                if (touch.clientY - rect.top < pongCanvas.height / 2) player1.dy = -playerPaddleSpeed;
+                else player1.dy = playerPaddleSpeed;
+            }
+        }
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            player1.dy = 0;
         }
 
-        // Event listeners
+        function resizeGame() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            if(particlesArray.length > 0 || gameRunning || gamePaused) initParticles();
+
+
+            const gameContainerStyle = getComputedStyle(document.querySelector('.game-container'));
+            const containerPaddingVertical = parseFloat(gameContainerStyle.paddingTop) + parseFloat(gameContainerStyle.paddingBottom);
+
+            const controlsMainHeight = document.querySelector('.controls-main').offsetHeight;
+            const controlsSettingsHeight = document.querySelector('.controls-settings').offsetHeight;
+            const h1Height = document.querySelector('h1').offsetHeight;
+            const gameInfoHeight = document.querySelector('.game-info').offsetHeight;
+            const rallyCounterHeight = document.querySelector('.rally-counter').offsetHeight;
+            const gameWrapperMarginBottom = parseFloat(getComputedStyle(document.querySelector('.game-wrapper')).marginBottom);
+
+            const totalNonCanvasHeight = controlsMainHeight + controlsSettingsHeight + h1Height + gameInfoHeight + rallyCounterHeight + containerPaddingVertical + gameWrapperMarginBottom + 60; // 60 for various gaps
+            let maxCanvasHeight = window.innerHeight - totalNonCanvasHeight;
+
+            let newWidth = maxCanvasHeight * (16 / 9);
+            let newHeight = maxCanvasHeight;
+
+            const gameWrapper = document.querySelector('.game-wrapper');
+            let maxCanvasWidth = gameWrapper.clientWidth;
+
+            if (newWidth > maxCanvasWidth) {
+                newWidth = maxCanvasWidth;
+                newHeight = newWidth / (16 / 9);
+            }
+            if (newHeight > maxCanvasHeight && maxCanvasHeight > 0) {
+                 newHeight = maxCanvasHeight;
+                 newWidth = newHeight * (16/9);
+            }
+
+            newWidth = Math.max(160, newWidth); // Minimum reasonable width
+            newHeight = Math.max(90, newHeight); // Minimum reasonable height
+
+            pongCanvas.style.width = `${newWidth}px`;
+            pongCanvas.style.height = `${newHeight}px`;
+            pongCanvas.width = newWidth;
+            pongCanvas.height = newHeight;
+
+            player1.x = 15;
+            player1.y = pongCanvas.height / 2 - player1.height / 2;
+            player2.x = pongCanvas.width - player2.width - 15;
+            player2.y = pongCanvas.height / 2 - player2.height / 2;
+
+            if (!gameRunning) resetBall();
+            draw();
+            if (gamePaused) { // If paused during resize, re-show pause message
+                 showCanvasMessage("PAUSED", "Press 'P' or Resume to continue", true);
+            }
+        }
+
+        // Event Listeners
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
-        window.addEventListener('resize', resizeCanvas);
-        startButton.addEventListener('click', startGame);
-        resetButton.addEventListener('click', resetGame);
+        window.addEventListener('resize', resizeGame);
 
-        // Initialize the game when the window loads
+        pongCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        pongCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        pongCanvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+        pongCanvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+        startButton.addEventListener('click', startGame);
+        pauseButton.addEventListener('click', togglePauseGame);
+        resetButton.addEventListener('click', resetGame);
+        difficultySelector.addEventListener('change', (e) => {
+            playSound(uiClickSynth, 'F3', '32n');
+            setDifficulty(e.target.value);
+            if(!gameRunning && !gamePaused) {
+                resetBall();
+                draw();
+            }
+        });
+
+        // Initial Setup
         window.onload = function() {
-            resizeCanvas(); // Set initial canvas size
-            resetGame(); // Set initial game state and show start message
+            // Update paddle colors based on CSS variables after they are defined
+            player1.color1 = getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim();
+            player1.color2 = colorMix(player1.color1, '#000000', 0.7);
+            player2.color1 = getComputedStyle(document.documentElement).getPropertyValue('--accent-danger').trim();
+            player2.color2 = colorMix(player2.color1, '#000000', 0.7);
+
+            setDifficulty(difficultySelector.value);
+            initParticles();
+            resizeGame();
+            resetGame(); // This will show initial message
+            animate();
         };
     </script>
 </body>
