@@ -5,6 +5,8 @@ you can test this first beta game in here
 minertycoon : https://rkdxodud290.github.io/index.html
 
 
-pong game : https://rkdxodud290.github.io/ponggame.html
+pong game (pc) : https://rkdxodud290.github.io/ponggame.html
+
+brick bracker (pc) : https://rkdxodud290.github.io/brick_bracker_pc.html
 i hope you like it
 it is a very good game and if there are and issue post on issue tab
