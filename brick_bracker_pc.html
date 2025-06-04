@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brick Breaker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a202c; /* Tailwind's gray-900 */
+            color: #e2e8f0; /* Tailwind's gray-300 */
+            overflow: hidden; /* Prevent scrollbars from game elements slightly overflowing */
+        }
+        #gameContainer {
+            border: 2px solid #4a5568; /* Tailwind's gray-600 */
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            position: relative; /* For positioning message box */
+        }
+        canvas {
+            display: block;
+            background-color: #2d3748; /* Tailwind's gray-800 */
+            border-radius: 0.375rem; /* Tailwind's rounded-md */
+        }
+        .game-info {
+            font-size: 1.25rem; /* Tailwind's text-xl */
+            margin-bottom: 1rem; /* Tailwind's mb-4 */
+            text-align: center;
+        }
+        #messageBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(45, 55, 72, 0.9); /* Tailwind's gray-800 with opacity */
+            color: white;
+            padding: 2rem; /* Tailwind's p-8 */
+            border-radius: 0.5rem; /* Tailwind's rounded-lg */
+            text-align: center;
+            z-index: 10;
+            display: none; /* Hidden by default */
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        #messageBox h2 {
+            font-size: 1.875rem; /* Tailwind's text-3xl */
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        #messageBox p {
+            font-size: 1.125rem; /* Tailwind's text-lg */
+            margin-bottom: 1.5rem;
+        }
+        .play-again-button {
+            background-color: #4299e1; /* Tailwind's blue-500 */
+            color: white;
+            font-weight: bold;
+            padding: 0.75rem 1.5rem; /* Tailwind's py-3 px-6 */
+            border-radius: 0.375rem; /* Tailwind's rounded-md */
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1rem; /* Tailwind's text-base */
+        }
+        .play-again-button:hover {
+            background-color: #3182ce; /* Tailwind's blue-600 */
+        }
+        .controls-info {
+            margin-top: 1rem;
+            font-size: 0.875rem; /* Tailwind's text-sm */
+            color: #a0aec0; /* Tailwind's gray-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div id="score" class="game-info">Score: 0</div>
+    <div id="lives" class="game-info mb-2">Lives: 3</div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="messageBox">
+            <h2 id="messageTitle">Game Over!</h2>
+            <p id="messageText">Your score: 0</p>
+            <button id="playAgainButton" class="play-again-button">Play Again</button>
+        </div>
+    </div>
+    <div class="controls-info">Use Left/Right Arrow keys or Mouse to move the paddle.</div>
+
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // DOM Elements for UI
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const playAgainButton = document.getElementById('playAgainButton');
+
+        // Game variables
+        let score = 0;
+        let lives = 3;
+        let gameRunning = true;
+        let animationFrameId;
+
+        // Ball properties
+        const ballRadius = 10;
+        let ballX, ballY; // To be set in resetBallAndPaddle
+        let ballDX = 4; // Ball speed X
+        let ballDY = -4; // Ball speed Y
+
+        // Paddle properties
+        const paddleHeight = 12;
+        const paddleWidth = 100;
+        let paddleX; // To be set in resetBallAndPaddle
+        const paddleY = () => canvas.height - paddleHeight - 10; // Dynamic based on canvas height
+        let rightPressed = false;
+        let leftPressed = false;
+
+        // Brick properties
+        const brickRowCount = 5;
+        const brickColumnCount = 8;
+        const brickWidth = 70;
+        const brickHeight = 20;
+        const brickPadding = 10;
+        const brickOffsetTop = 40;
+        const brickOffsetLeft = () => (canvas.width - (brickColumnCount * (brickWidth + brickPadding) - brickPadding)) / 2; // Center bricks
+
+        let bricks = [];
+
+        // Function to set canvas dimensions
+        function setCanvasDimensions() {
+            const container = document.getElementById('gameContainer');
+            // Aim for a common aspect ratio, e.g., 4:3 or 16:9, but fit within screen
+            const maxWidth = Math.min(window.innerWidth * 0.9, 800); // Max width or 90% of window width
+            const maxHeight = Math.min(window.innerHeight * 0.7, 600); // Max height or 70% of window height
+            
+            // For simplicity, using a fixed aspect ratio if possible, otherwise fit
+            // Let's target a common game canvas size like 640x480 if space allows, otherwise scale down.
+            let newCanvasWidth = 720; // Default target width
+            let newCanvasHeight = 480; // Default target height
+
+            if (newCanvasWidth > maxWidth) {
+                newCanvasWidth = maxWidth;
+                newCanvasHeight = (maxWidth / 720) * 480;
+            }
+            if (newCanvasHeight > maxHeight) {
+                newCanvasHeight = maxHeight;
+                newCanvasWidth = (maxHeight / 480) * 720;
+            }
+            
+            // Ensure dimensions are not too small
+            newCanvasWidth = Math.max(newCanvasWidth, 320);
+            newCanvasHeight = Math.max(newCanvasHeight, 240);
+
+
+            canvas.width = newCanvasWidth;
+            canvas.height = newCanvasHeight;
+            
+            // Re-initialize game elements that depend on canvas size
+            resetGameElements();
+        }
+
+        function resetGameElements() {
+            resetBallAndPaddle();
+            initializeBricks();
+             // Update paddleY as it's a function of canvas.height
+            paddleX = (canvas.width - paddleWidth) / 2;
+        }
+        
+        // Call it initially and on window resize
+        window.addEventListener('resize', () => {
+            if (gameRunning) { // Only resize and restart if game was running
+                cancelAnimationFrame(animationFrameId); // Stop current loop
+                setCanvasDimensions();
+                draw(); // Redraw immediately
+            } else { // If game is over or paused, just set dimensions
+                setCanvasDimensions();
+                // Optionally redraw the static game over screen
+                if (messageBox.style.display === 'block') {
+                    drawEverythingForStaticScreen();
+                }
+            }
+        });
+
+
+        function initializeBricks() {
+            bricks = [];
+            const currentBrickOffsetLeft = brickOffsetLeft(); // Calculate once per initialization
+            for (let c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCount; r++) {
+                    bricks[c][r] = { x: 0, y: 0, status: 1, color: getRandomBrickColor() };
+                }
+            }
+        }
+        
+        function getRandomBrickColor() {
+            const colors = ['#f56565', '#ed8936', '#ecc94b', '#48bb78', '#4299e1', '#9f7aea', '#ed64a6']; // Tailwind red, orange, yellow, green, blue, purple, pink
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Event listeners for paddle control
+        document.addEventListener('keydown', keyDownHandler, false);
+        document.addEventListener('keyup', keyUpHandler, false);
+        document.addEventListener('mousemove', mouseMoveHandler, false);
+
+        function keyDownHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        }
+
+        function mouseMoveHandler(e) {
+            // Calculate mouse position relative to the canvas
+            const relativeX = e.clientX - canvas.getBoundingClientRect().left;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                // Center paddle under mouse, ensuring it doesn't go off-screen
+                paddleX = Math.min(Math.max(relativeX - paddleWidth / 2, 0), canvas.width - paddleWidth);
+            }
+        }
+
+        // Collision detection for bricks
+        function collisionDetection() {
+            const currentBrickOffsetLeft = brickOffsetLeft(); // Recalculate if canvas width changed
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    const b = bricks[c][r];
+                    if (b.status === 1) {
+                        // Calculate brick position dynamically
+                        const brickX = (c * (brickWidth + brickPadding)) + currentBrickOffsetLeft;
+                        const brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                        b.x = brickX; // Store for drawing
+                        b.y = brickY; // Store for drawing
+
+                        // Check if ball hits the brick
+                        if (ballX + ballRadius > brickX && ballX - ballRadius < brickX + brickWidth &&
+                            ballY + ballRadius > brickY && ballY - ballRadius < brickY + brickHeight) {
+                            ballDY = -ballDY; // Reverse ball direction
+                            b.status = 0; // Brick is broken
+                            score++;
+                            scoreDisplay.textContent = `Score: ${score}`;
+
+                            // Check for win condition
+                            if (score === brickRowCount * brickColumnCount) {
+                                showMessage("YOU WIN!", `Congratulations! Final Score: ${score}`);
+                                gameRunning = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Drawing functions
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f7fafc'; // Tailwind's gray-100
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            const currentPaddleY = paddleY();
+            ctx.rect(paddleX, currentPaddleY, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#63b3ed'; // Tailwind's blue-400
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBricks() {
+            const currentBrickOffsetLeft = brickOffsetLeft(); // Ensure bricks are centered
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        // Calculate brick position dynamically for drawing
+                        const brickX = (c * (brickWidth + brickPadding)) + currentBrickOffsetLeft;
+                        const brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                        bricks[c][r].x = brickX; // Update stored position if needed
+                        bricks[c][r].y = brickY;
+
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = bricks[c][r].color;
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+        
+        function drawEverythingForStaticScreen() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            drawBricks(); // Draw remaining bricks (if any, or all if game just started and resized)
+            drawPaddle(); // Draw paddle in its last/initial position
+            // Don't draw the ball if game over, or draw it at its last position if desired
+        }
+
+        // Main game loop
+        function draw() {
+            if (!gameRunning) {
+                 if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw game elements
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            collisionDetection();
+
+            // Ball movement logic
+            // Bounce off left and right walls
+            if (ballX + ballDX > canvas.width - ballRadius || ballX + ballDX < ballRadius) {
+                ballDX = -ballDX;
+            }
+            // Bounce off top wall
+            if (ballY + ballDY < ballRadius) {
+                ballDY = -ballDY;
+            } else if (ballY + ballDY > canvas.height - ballRadius - paddleHeight - 5) { // Check near paddle height
+                 const currentPaddleY = paddleY();
+                if (ballX > paddleX && ballX < paddleX + paddleWidth && ballY + ballRadius > currentPaddleY) {
+                    ballDY = -ballDY; // Bounce off paddle
+                     // Optional: change angle based on where it hits paddle
+                    let deltaX = ballX - (paddleX + paddleWidth/2);
+                    ballDX = deltaX * 0.20; // Adjust factor for more/less influence
+                } else if (ballY + ballDY > canvas.height - ballRadius) { // Ball hits bottom
+                    lives--;
+                    livesDisplay.textContent = `Lives: ${lives}`;
+                    if (lives <= 0) {
+                        showMessage("GAME OVER", `Your Score: ${score}`);
+                        gameRunning = false;
+                    } else {
+                        // Reset ball and paddle for next life
+                        resetBallAndPaddle();
+                    }
+                }
+            }
+
+            // Update ball position
+            ballX += ballDX;
+            ballY += ballDY;
+
+            // Paddle movement logic
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7;
+            }
+            
+            // Ensure paddle stays within bounds (especially for mouse control if it ever overshoots slightly)
+            paddleX = Math.min(Math.max(paddleX, 0), canvas.width - paddleWidth);
+
+
+            // Request next frame
+            animationFrameId = requestAnimationFrame(draw);
+        }
+
+        function resetBallAndPaddle() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height - 60; // Start ball a bit above paddle
+            // Randomize initial ball direction slightly for variety
+            ballDX = (Math.random() < 0.5 ? 1 : -1) * (3 + Math.random() * 2) ; // Speed between 3 and 5
+            ballDY = -(3 + Math.random() * 2); // Upwards speed between 3 and 5
+            paddleX = (canvas.width - paddleWidth) / 2;
+        }
+
+        function showMessage(title, text) {
+            messageTitle.textContent = title;
+            messageText.textContent = text;
+            messageBox.style.display = 'flex'; // Use flex to center content if needed, or block
+            // Stop the game loop
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+
+        function hideMessage() {
+            messageBox.style.display = 'none';
+        }
+
+        function startGame() {
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            scoreDisplay.textContent = `Score: ${score}`;
+            livesDisplay.textContent = `Lives: ${lives}`;
+            
+            hideMessage();
+            setCanvasDimensions(); // This will also call initializeBricks and resetBallAndPaddle
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            animationFrameId = requestAnimationFrame(draw);
+        }
+
+        playAgainButton.addEventListener('click', startGame);
+
+        // Initial setup
+        startGame(); // Start the game automatically on load
+    </script>
+</body>
+</html>
