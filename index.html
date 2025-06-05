@@ -69,8 +69,9 @@
                                     console.error("Error during sign-in:", error);
                                     isAuthReady = true; 
                                     this.resetState(false); 
+                                    this.calculateOfflineProgression(Date.now()); 
                                     this.checkDailyLogin(); 
-                                    this.render();
+                                    this.render(); // Initial render for offline mode
                                     document.getElementById('loading-message').classList.add('hidden');
                                 }
                             }
@@ -83,7 +84,7 @@
                         this.resetState(false); 
                         this.calculateOfflineProgression(Date.now()); 
                         this.checkDailyLogin();
-                        this.render();
+                        this.render(); // Initial render for offline mode
                         document.getElementById('loading-message').classList.add('hidden');
                     }
                 } catch (error) {
@@ -94,7 +95,7 @@
                     this.resetState(false); 
                     this.calculateOfflineProgression(Date.now()); 
                     this.checkDailyLogin();
-                    this.render();
+                    this.render(); // Initial render for offline mode
                     document.getElementById('loading-message').classList.add('hidden');
                 }
 
@@ -911,7 +912,7 @@
                         else if (marketData.currentPrice < marketData.lastPrice) marketData.trendArrow = '<span class="text-red-400">&#9660;</span>'; 
                         else marketData.trendArrow = '<span class="text-slate-400">&#8212;</span>'; 
                     });
-                    if(this.state.currentTab === 'investments') this.render(); 
+                    if(this.state.currentTab === 'investments') this.renderInvestments(); // Only render if tab is active
                     marketUpdateInterval = setTimeout(updateMarket, updateFrequency());
                 };
                 marketUpdateInterval = setTimeout(updateMarket, updateFrequency());
@@ -943,7 +944,8 @@
 
                     this.showToast(`Bought ${amount} ${this.investableAssets[assetId].name} shares for $${this.formatNumber(totalCost, 2)} (incl. $${this.formatNumber(fee,2)} fee).`);
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Only update money
+                    this.renderInvestments(); // Update investment display
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money!", true);
@@ -975,7 +977,8 @@
 
                 this.showToast(`Sold ${amount} ${this.investableAssets[assetId].name} shares for $${this.formatNumber(totalRevenue, 2)} (after $${this.formatNumber(fee,2)} fee).`);
                 this.checkAllAchievements();
-                this.render();
+                this.renderMoneyDisplay(); // Only update money
+                this.renderInvestments(); // Update investment display
                 this.saveGame(true);
             },
 
@@ -1042,7 +1045,7 @@
                     }
                 }
                 if (newAchievementUnlocked) {
-                    this.render(); 
+                    this.renderAchievements(); 
                     this.saveGame(false); 
                 }
             },
@@ -1053,18 +1056,26 @@
                 const now = Date.now();
                 const deltaTime = (now - (this.state.lastUpdate || now)) / 1000; 
 
+                // Track if any UI-relevant data changed to trigger a render
+                let renderRequired = false;
+
+                // Update resource counts and check for changes
                 for (const resKey in this.state.resources) {
                     const resource = this.state.resources[resKey];
                     if (resource.unlocked && resource.miners > 0 && resource.minerProductionBase) { 
                         const productionPerSecond = resource.miners * this.getMinerProduction(resource);
                         const producedAmount = productionPerSecond * deltaTime;
-                        resource.count += producedAmount;
-                        if (this.state.stats.totalResourcesMined && this.state.stats.totalResourcesMined.hasOwnProperty(resKey)) {
-                            this.state.stats.totalResourcesMined[resKey] += producedAmount;
+                        if (producedAmount > 0) { // Only update if there's actual production
+                            resource.count += producedAmount;
+                            if (this.state.stats.totalResourcesMined && this.state.stats.totalResourcesMined.hasOwnProperty(resKey)) {
+                                this.state.stats.totalResourcesMined[resKey] += producedAmount;
+                            }
+                            renderRequired = true; // Resource count changed
                         }
                     }
                 }
 
+                // Update processors and check for changes
                 if (this.state.processors) {
                     for (const procId in this.state.processors) {
                         const processor = this.state.processors[procId];
@@ -1085,10 +1096,14 @@
                                 processor.isActive = false;
                                 processor.currentProgress = 0;
                                 this.checkAllAchievements(); 
+                                renderRequired = true; // Processor state changed
                             }
+                            renderRequired = true; // Progress bar needs updating
                         }
                     }
                 }
+                
+                // Update research and check for changes
                 if (this.state.research) {
                     for (const researchId in this.state.research) {
                         const researchItem = this.state.research[researchId];
@@ -1102,22 +1117,27 @@
                                 this.showToast(`Research Complete: ${researchItem.name}!`, false, 5000); 
                                 this.handleResearchCompletion(researchId);
                                 this.checkAllAchievements();
+                                renderRequired = true; // Research state changed
                             }
+                            renderRequired = true; // Progress bar needs updating
                         }
                     }
                 }
                 
                 if (this.state.stats.highestMoneyThisPrestige < this.state.money) {
                     this.state.stats.highestMoneyThisPrestige = this.state.money;
+                    renderRequired = true; 
                 }
                 if (this.state.stats.allTimeHighestMoney < this.state.money) {
                     this.state.stats.allTimeHighestMoney = this.state.money;
+                    renderRequired = true;
                 }
-
 
                 this.state.lastUpdate = now; 
                 this.checkAllAchievements(); 
-                this.render(); 
+                if (renderRequired) {
+                    this.render(); 
+                }
             },
 
             manualMine(resourceId) {
@@ -1130,7 +1150,7 @@
                          this.state.stats.totalResourcesMined[resourceId] += minedAmount;
                     }
                     this.checkAllAchievements(); 
-                    this.render();
+                    this.renderResources(); // Only update resources
                 }
             },
 
@@ -1171,14 +1191,16 @@
                     if (resource.unlocked && resource.count > 0) {
                         const valuePerUnit = resource.value * this.state.globalUpgrades.sellMultiplier.value * heavenlyBonusMultiplier;
                         totalEarnings += resource.count * valuePerUnit;
-                        resource.count = 0;
+                        resource.count = 0; // Reset count
                     }
                 }
                 this.state.money += totalEarnings;
                 this.state.stats.currentRunMoneyEarned += totalEarnings;
                 this.showToast(`Sold all resources for $${this.formatNumber(totalEarnings,2)}!`);
                 this.checkAllAchievements();
-                this.render();
+                this.renderMoneyDisplay(); // Update money
+                this.renderResources(); // Update resources (counts to 0)
+                this.renderMarket(); // Update market (counts to 0)
                 this.saveGame(true); 
             },
             
@@ -1211,7 +1233,9 @@
 
                 this.showToast(`Sold ${this.formatNumber(numQuantity)} ${resource.name} for $${this.formatNumber(earnings, 2)}!`);
                 this.checkAllAchievements();
-                this.render();
+                this.renderMoneyDisplay(); // Update money
+                this.renderResources(); // Update resource count
+                this.renderMarket(); // Update market count
                 this.saveGame(true);
             },
 
@@ -1236,7 +1260,8 @@
                     resource.manualMineLevel++;
                     this.showToast(`${resource.name} Click Power Lvl ${resource.manualMineLevel}!`);
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    this.renderResources(); // Update resource card
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money!", true);
@@ -1287,7 +1312,8 @@
                     resource.miners += amountToBuy;
                     this.showToast(`Bought ${amountToBuy} ${resource.name} Miner(s)! Total: ${resource.miners}`);
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    this.renderResources(); // Update resource card
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money!", true);
@@ -1314,7 +1340,8 @@
                     resource.minerSpeedLevel++;
                     this.showToast(`${resource.name} Miner Speed Lvl ${resource.minerSpeedLevel+1}!`); 
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    this.renderResources(); // Update resource card
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money!", true);
@@ -1345,7 +1372,10 @@
                     }
                     this.showToast(`${upgrade.name} now Lvl ${upgrade.level}!`);
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    this.renderGlobalUpgrades(); // Update upgrade card
+                    this.renderResources(); // Might affect unlock costs and mine/miner stats
+                    this.renderProcessors(); // Might affect upgrade costs
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money!", true);
@@ -1405,7 +1435,13 @@
                     item.unlocked = true;
                     this.showToast(`${item.name} unlocked!`);
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    if (itemType === 'resource') {
+                        this.renderResources(); // Update resource card
+                        this.renderMarket(); // Newly unlocked resource might appear in market
+                    } else if (itemType === 'processor') {
+                        this.renderProcessors(); // Update processor card
+                    }
                     this.saveGame(true);
                 } else {
                     this.showToast(`Cannot meet unlock requirements or ${itemType} already unlocked!`, true);
@@ -1448,7 +1484,8 @@
                         this.showToast(`${processor.name} Efficiency Lvl ${processor.efficiencyLevel}!`);
                     }
                     this.checkAllAchievements();
-                    this.render();
+                    this.renderMoneyDisplay(); // Update money
+                    this.renderProcessors(); // Update processor card
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough money for upgrade!", true);
@@ -1489,7 +1526,9 @@
                 processor.isActive = true;
                 processor.currentProgress = 0;
                 this.showToast(`Started processing 1 batch in ${processor.name}.`);
-                this.render();
+                this.renderMoneyDisplay(); // Update money
+                this.renderResources(); // Update resource counts for inputs
+                this.renderProcessors(); // Update processor progress bar
                 this.saveGame(false); 
             },
             
@@ -1546,7 +1585,9 @@
                 researchItem.isResearching = true;
                 researchItem.currentProgress = 0;
                 this.showToast(`Started research: ${researchItem.name}!`);
-                this.render();
+                this.renderMoneyDisplay(); // Update money
+                this.renderResources(); // Update resource counts for costs
+                this.renderResearch(); // Update research card (progress bar)
                 this.saveGame(true);
             },
             
@@ -1568,7 +1609,9 @@
                 researchItem.isResearching = false;
                 researchItem.currentProgress = 0;
                 this.showToast(`Cancelled research: ${researchItem.name}. Costs refunded.`, false);
-                this.render();
+                this.renderMoneyDisplay(); // Update money
+                this.renderResources(); // Update resource counts for refunds
+                this.renderResearch(); // Update research card
                 this.saveGame(true);
             },
 
@@ -1579,12 +1622,15 @@
                 if (researchItem.unlocksResource && this.state.resources[researchItem.unlocksResource]) {
                     this.state.resources[researchItem.unlocksResource].unlocked = true;
                     this.showToast(`${this.state.resources[researchItem.unlocksResource].name} can now be mined/acquired!`, false, 5000);
+                    this.renderResources(); // New resource might appear
+                    this.renderMarket(); // New resource might appear in market
                 }
                 if (researchItem.unlocksProcessor && this.state.processors[researchItem.unlocksProcessor]) {
                     this.state.processors[researchItem.unlocksProcessor].unlocked = true;
                      this.showToast(`${this.state.processors[researchItem.unlocksProcessor].name} is now available!`, false, 5000);
+                     this.renderProcessors(); // New processor might appear
                 }
-                this.render();
+                this.renderResearch(); // Update research card (status)
             },
 
             // --- Prestige System ---
@@ -1614,7 +1660,7 @@
                     () => {
                         this.resetState(true); 
                         this.showToast(`Prestiged! Gained ${this.formatNumber(ppGained)} PP. Welcome to a new beginning!`, false, 7000);
-                        this.switchTab('mines'); 
+                        this.switchTab('mines'); // Switch to a common starting tab after prestige
                     }
                 );
             },
@@ -1636,7 +1682,13 @@
                     this.state.prestige.points -= cost;
                     upgrade.level++;
                     this.showToast(`${upgrade.name} upgraded to Lvl ${upgrade.level}!`, false);
-                    this.render();
+                    this.renderPrestige(); // Update prestige tab
+                    // Re-render relevant sections that might be affected by prestige upgrades
+                    this.renderResources(); // Miners affected by Time Warp
+                    this.renderGlobalUpgrades(); // Might need to reflect new base value
+                    this.renderProcessors(); // Processors affected by Time Warp
+                    this.renderResearch(); // Research affected by Research Grant
+                    this.renderMarket(); // Sell prices affected by Heavenly Bonus
                     this.saveGame(true);
                 } else {
                     this.showToast("Not enough Prestige Points!", true);
@@ -1715,7 +1767,7 @@
 
                             this.calculateOfflineProgression(this.state.lastUpdate); 
                             this.checkAllAchievements(false); 
-                            this.render();
+                            this.render(); // Full render after loading a new save
                             this.saveGame(true); 
                             this.showToast("Save file loaded successfully!", false);
                         } else {
@@ -1735,42 +1787,60 @@
                 reader.readAsText(file);
             },
             
-            render() {
-                if (!document.body || !document.getElementById('money-display') || !this.state || !this.state.resources || !this.state.globalUpgrades || !this.state.achievements || !this.state.investments || !this.state.processors || !this.state.stats || !this.state.research || !this.state.prestige) {
-                    console.warn("Render called too early or critical elements/state missing. Deferring render.");
-                    requestAnimationFrame(() => this.render());
-                    return;
+            // --- Rendering Functions (Optimized) ---
+
+            renderMoneyDisplay() {
+                const moneyDisplay = document.getElementById('money-display');
+                if (moneyDisplay) {
+                    moneyDisplay.textContent = `$${this.formatNumber(this.state.money, 2)}`;
                 }
+            },
 
-                document.getElementById('money-display').textContent = `$${this.formatNumber(this.state.money, 2)}`;
-                const heavenlyBonusMultiplier = 1 + (this.state.prestige.upgrades.heavenlyBonus.level * this.state.prestige.upgrades.heavenlyBonus.effectPerLevel);
-
+            renderResources() {
                 const resourcesContainer = document.getElementById('resources-container');
-                if (resourcesContainer) {
-                    resourcesContainer.innerHTML = ''; 
-                    Object.values(this.state.resources).filter(res => (res.manualMineBaseAmount || res.unlocked) && 
-                        (res.id !== 'element_x' || (res.id === 'element_x' && res.unlocked)) && 
-                        (res.id !== 'uranium' || (res.id === 'uranium' && res.unlocked)) && 
-                        (res.id !== 'void_crystal' || (res.id === 'void_crystal' && res.unlocked)) &&
-                        (res.id !== 'cosmic_shard' || (res.id === 'cosmic_shard' && res.unlocked)) // New cosmic shard filter
-                    ).forEach(res => { 
-                        if (!res) return; 
-                        const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150'; 
+                if (!resourcesContainer) return;
+
+                const heavenlyBonusMultiplier = 1 + (this.state.prestige.upgrades.heavenlyBonus.level * this.state.prestige.upgrades.heavenlyBonus.effectPerLevel);
+                const currentResourceIds = new Set();
+
+                Object.values(this.state.resources)
+                    .filter(res => (res.manualMineBaseAmount || res.unlocked) && 
+                                (res.id !== 'element_x' || (res.id === 'element_x' && res.unlocked)) && 
+                                (res.id !== 'uranium' || (res.id === 'uranium' && res.unlocked)) && 
+                                (res.id !== 'void_crystal' || (res.id === 'void_crystal' && res.unlocked)) &&
+                                (res.id !== 'cosmic_shard' || (res.id === 'cosmic_shard' && res.unlocked)) 
+                    )
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .forEach(res => {
+                        currentResourceIds.add(res.id);
+                        let card = document.getElementById(`resource-card-${res.id}`);
+                        
+                        if (!card) {
+                            card = document.createElement('div');
+                            card.id = `resource-card-${res.id}`;
+                            card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect'; 
+                            resourcesContainer.appendChild(card);
+                        }
 
                         if (!res.unlocked && res.unlockRequirements) { 
                             if (this.checkUnlockConditions(res)) { 
-                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50'); 
+                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow'); 
+                                card.classList.remove('opacity-60', 'bg-slate-800/70');
                                 card.innerHTML = this.createUnlockCardInnerHtml(res, 'resource');
-                                card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
-                                    e.stopPropagation(); 
-                                    this.unlockItem(res.id, 'resource');
-                                });
+                                const unlockButton = card.querySelector('button[data-action="unlockItem"]');
+                                if (unlockButton) {
+                                    unlockButton.onclick = (e) => {
+                                        e.stopPropagation(); 
+                                        this.unlockItem(res.id, 'resource');
+                                    };
+                                }
                             } else {
+                                card.classList.remove('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow');
                                 card.classList.add('opacity-60', 'bg-slate-800/70'); 
                                 card.innerHTML = this.createLockedCardInnerHtml(res, 'resource');
                             }
                         } else if (res.unlocked) { 
+                            card.classList.remove('opacity-60', 'bg-slate-800/70', 'border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow');
                             let productionRate = (res.miners && res.miners > 0 && res.minerProductionBase) ? res.miners * this.getMinerProduction(res) : 0;
                             card.innerHTML = `
                                 <div class="flex-grow"> 
@@ -1799,133 +1869,185 @@
                                         <button data-action="buyMinerSpeedUpgrade" data-resource="${res.id}" class="w-full text-xs sm:text-sm bg-teal-600 hover:bg-teal-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Upgrade Speed ($${this.formatNumber(this.getMinerSpeedUpgradeCost(res))})</button>
                                     </div>
                                 </div>` : '' }`;
-                        } else { 
-                             card.innerHTML = `<h3 class="text-lg sm:text-xl font-semibold text-slate-500 flex items-center"><span class="mr-2 text-xl">${res.icon || '❔'}</span>${res.name} (Research Required)</h3>`;
-                             card.classList.add('opacity-50', 'bg-slate-800/70');
                         }
-                        resourcesContainer.appendChild(card);
                     });
-                }
+                
+                // Remove cards for resources no longer in the filtered list (e.g., if a processor generates a resource that isn't directly mineable)
+                Array.from(resourcesContainer.children).forEach(child => {
+                    const id = child.id.replace('resource-card-', '');
+                    if (!this.state.resources[id] || 
+                        (!this.state.resources[id].manualMineBaseAmount && !this.state.resources[id].unlocked) || 
+                        (this.state.resources[id].id === 'element_x' && !this.state.resources[id].unlocked) ||
+                        (this.state.resources[id].id === 'uranium' && !this.state.resources[id].unlocked) ||
+                        (this.state.resources[id].id === 'void_crystal' && !this.state.resources[id].unlocked) ||
+                        (this.state.resources[id].id === 'cosmic_shard' && !this.state.resources[id].unlocked)
+                        ) {
+                        resourcesContainer.removeChild(child);
+                    }
+                });
+            },
 
-
+            renderGlobalUpgrades() {
                 const globalUpgradesContainer = document.getElementById('global-upgrades-container');
-                if (globalUpgradesContainer) {
-                    globalUpgradesContainer.innerHTML = '';
-                    for (const upgradeKey in this.state.globalUpgrades) {
-                        const upgrade = this.state.globalUpgrades[upgradeKey];
-                        if (!upgrade) continue; 
-                        const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col justify-between hover:bg-slate-600/70 transition-colors duration-150'; 
-                        let effectDesc = upgrade.description || ""; 
-                        let currentEffect = "";
-                        if (upgradeKey === "sellMultiplier" || upgradeKey === "minerSpeedBoost" || upgradeKey === "manualMiningBoost" || upgradeKey === "masterGeologist") {
-                             currentEffect = `${( (1 + upgrade.level * upgrade.increasePerLevel) * 100 - 100).toFixed(1)}% Bonus`; 
-                        } else if (upgradeKey === "researchAndDevelopment") {
-                            currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 50).toFixed(1)}% Cost Reduction`;
-                        } else if (upgradeKey === "efficiencyTraining") {
-                            currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 40).toFixed(1)}% Cost Reduction`;
-                        }
-                        card.innerHTML = `
-                            <div class="flex-grow">
-                                <h3 class="text-md sm:text-lg font-semibold text-yellow-400">${upgrade.name}</h3>
-                                <p class="text-xs sm:text-sm text-slate-300 my-1">${effectDesc}</p>
-                                <p class="text-sm sm:text-base my-1 text-sky-300">Current: ${currentEffect}</p>
-                                <p class="text-xs sm:text-sm text-slate-400 mb-2">Level: ${upgrade.level}</p>
-                            </div>
-                            <button data-action="buyGlobalUpgrade" data-upgradekey="${upgradeKey}" class="mt-auto w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Upgrade ($${this.formatNumber(this.getGlobalUpgradeCost(upgradeKey))})</button>`;
+                if (!globalUpgradesContainer) return;
+                
+                Object.keys(this.state.globalUpgrades).forEach(upgradeKey => {
+                    const upgrade = this.state.globalUpgrades[upgradeKey];
+                    let card = document.getElementById(`global-upgrade-card-${upgradeKey}`);
+
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = `global-upgrade-card-${upgradeKey}`;
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col justify-between hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect'; 
                         globalUpgradesContainer.appendChild(card);
                     }
-                }
-                
+
+                    let effectDesc = upgrade.description || ""; 
+                    let currentEffect = "";
+                    if (upgradeKey === "sellMultiplier" || upgradeKey === "minerSpeedBoost" || upgradeKey === "manualMiningBoost" || upgradeKey === "masterGeologist") {
+                            currentEffect = `${( (1 + upgrade.level * upgrade.increasePerLevel) * 100 - 100).toFixed(1)}% Bonus`; 
+                    } else if (upgradeKey === "researchAndDevelopment") {
+                        currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 50).toFixed(1)}% Cost Reduction`;
+                    } else if (upgradeKey === "efficiencyTraining") {
+                        currentEffect = `${Math.min(upgrade.level * upgrade.increasePerLevel * 100, 40).toFixed(1)}% Cost Reduction`;
+                    }
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="text-md sm:text-lg font-semibold text-yellow-400">${upgrade.name}</h3>
+                            <p class="text-xs sm:text-sm text-slate-300 my-1">${effectDesc}</p>
+                            <p class="text-sm sm:text-base my-1 text-sky-300">Current: ${currentEffect}</p>
+                            <p class="text-xs sm:text-sm text-slate-400 mb-2">Level: ${upgrade.level}</p>
+                        </div>
+                        <button data-action="buyGlobalUpgrade" data-upgradekey="${upgradeKey}" class="mt-auto w-full bg-orange-600 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Upgrade ($${this.formatNumber(this.getGlobalUpgradeCost(upgradeKey))})</button>`;
+                });
+            },
+
+            renderProcessors() {
                 const processorsContainer = document.getElementById('processors-container');
-                if (processorsContainer) {
-                    processorsContainer.innerHTML = '';
-                    for (const procId in this.state.processors) {
-                        const processor = this.state.processors[procId];
-                        const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
+                if (!processorsContainer) return;
 
-                        if (!processor.unlocked) {
-                            let researchPrerequisiteMet = true;
-                            let researchPrerequisiteText = "";
-                            if (processor.unlockRequirements === null) { 
-                                const researchLink = Object.values(this.state.research).find(r => r.unlocksProcessor === procId);
-                                if (researchLink && !researchLink.unlocked) {
-                                    researchPrerequisiteMet = false;
-                                    researchPrerequisiteText = `<p class="text-xs text-red-400 mt-1">Requires Research: ${researchLink.name}</p>`;
-                                } else if (!researchLink) { 
-                                     researchPrerequisiteMet = false;
-                                     researchPrerequisiteText = `<p class="text-xs text-red-400 mt-1">Error: Linked research not found.</p>`;
-                                }
-                            }
+                const currentProcessorIds = new Set();
 
-                            if (researchPrerequisiteMet && this.checkUnlockConditions(processor)) {
-                                card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50');
-                                card.innerHTML = this.createUnlockCardInnerHtml(processor, 'processor');
-                                 card.querySelector('button[data-action="unlockItem"]')?.addEventListener('click', (e) => {
-                                    e.stopPropagation(); 
-                                    this.unlockItem(processor.id, 'processor');
-                                });
-                            } else {
-                                card.classList.add('opacity-60', 'bg-slate-800/70');
-                                card.innerHTML = this.createLockedCardInnerHtml(processor, 'processor', researchPrerequisiteText);
-                            }
-                        } else {
-                            const actualInputAmounts = this.getActualInputAmounts(processor); 
-                            const outputRes = this.state.resources[processor.outputResourceId];
-                            const actualProcessingTime = this.getActualProcessingTime(processor);
-                            const actualCostToProcess = this.getActualCostToProcess(processor);
-                            const progressPercent = processor.isActive ? (processor.currentProgress / actualProcessingTime) * 100 : 0;
+                for (const procId in this.state.processors) {
+                    const processor = this.state.processors[procId];
+                    currentProcessorIds.add(procId);
+                    let card = document.getElementById(`processor-card-${procId}`);
 
-                            let inputsHtml = actualInputAmounts.map(input => {
-                                const inputResDef = this.state.resources[input.id];
-                                return `${this.formatNumber(input.amount)} ${inputResDef?.icon || ''} ${inputResDef?.name || input.id}`;
-                            }).join(' + ');
-                            const outputResIcon = outputRes?.icon || '';
-
-                            card.innerHTML = `
-                                <div class="flex-grow">
-                                    <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${processor.name}</h3>
-                                    <p class="text-xs sm:text-sm text-slate-300">Converts: ${inputsHtml} &rarr; ${processor.outputAmountBase} ${outputResIcon} ${outputRes.name}</p>
-                                    <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualProcessingTime, 1)}s | Cost: $${this.formatNumber(actualCostToProcess)}</p>
-                                    
-                                    ${processor.isActive ? `
-                                    <div class="w-full bg-slate-600 rounded-full h-3 my-2 overflow-hidden animated-progress-bar">
-                                        <div class="bg-sky-500 h-3 rounded-full" style="width: ${progressPercent}%"></div>
-                                    </div>
-                                    <p class="text-xs text-center text-sky-300">Processing... (${this.formatNumber(Math.max(0, actualProcessingTime - processor.currentProgress), 1)}s left)</p>
-                                    ` : `
-                                    <button data-action="startProcessing" data-processorid="${procId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm ${processor.isActive ? 'opacity-50 cursor-not-allowed' : ''}" ${processor.isActive ? 'disabled' : ''}>
-                                        Process Batch
-                                    </button>
-                                    `}
-                                </div>
-                                <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-1.5">
-                                    <p class="text-xs text-slate-200 mb-1">Speed Lvl: ${processor.speedLevel} | Efficiency Lvl: ${processor.efficiencyLevel}</p>
-                                    <div class="flex space-x-2">
-                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="speed" class="flex-1 text-xs bg-green-600 hover:bg-green-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Speed ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'speed'))})</button>
-                                        <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="efficiency" class="flex-1 text-xs bg-teal-600 hover:bg-teal-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Efficiency ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'efficiency'))})</button>
-                                    </div>
-                                </div>
-                            `;
-                        }
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = `processor-card-${procId}`;
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect';
                         processorsContainer.appendChild(card);
                     }
-                }
+                    
+                    if (!processor.unlocked) {
+                        let researchPrerequisiteMet = true;
+                        let researchPrerequisiteText = "";
+                        if (processor.unlockRequirements === null) { 
+                            const researchLink = Object.values(this.state.research).find(r => r.unlocksProcessor === procId);
+                            if (researchLink && !researchLink.unlocked) {
+                                researchPrerequisiteMet = false;
+                                researchPrerequisiteText = `<p class="text-xs text-red-400 mt-1">Requires Research: ${researchLink.name}</p>`;
+                            } else if (!researchLink) { 
+                                    researchPrerequisiteMet = false;
+                                    researchPrerequisiteText = `<p class="text-xs text-red-400 mt-1">Error: Linked research not found.</p>`;
+                            }
+                        }
 
+                        if (researchPrerequisiteMet && this.checkUnlockConditions(processor)) {
+                            card.classList.add('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow');
+                            card.classList.remove('opacity-60', 'bg-slate-800/70');
+                            card.innerHTML = this.createUnlockCardInnerHtml(processor, 'processor');
+                                const unlockButton = card.querySelector('button[data-action="unlockItem"]');
+                                if (unlockButton) {
+                                    unlockButton.onclick = (e) => {
+                                        e.stopPropagation(); 
+                                        this.unlockItem(processor.id, 'processor');
+                                    };
+                                }
+                        } else {
+                            card.classList.remove('border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow');
+                            card.classList.add('opacity-60', 'bg-slate-800/70');
+                            card.innerHTML = this.createLockedCardInnerHtml(processor, 'processor', researchPrerequisiteText);
+                        }
+                    } else {
+                        card.classList.remove('opacity-60', 'bg-slate-800/70', 'border-2', 'border-green-500', 'cursor-pointer', 'hover:shadow-green-500/50', 'unlockable-card-glow');
+                        const actualInputAmounts = this.getActualInputAmounts(processor); 
+                        const outputRes = this.state.resources[processor.outputResourceId];
+                        const actualProcessingTime = this.getActualProcessingTime(processor);
+                        const actualCostToProcess = this.getActualCostToProcess(processor);
+                        const progressPercent = processor.isActive ? (processor.currentProgress / actualProcessingTime) * 100 : 0;
+
+                        let inputsHtml = actualInputAmounts.map(input => {
+                            const inputResDef = this.state.resources[input.id];
+                            return `${this.formatNumber(input.amount)} ${inputResDef?.icon || ''} ${inputResDef?.name || input.id}`;
+                        }).join(' + ');
+                        const outputResIcon = outputRes?.icon || '';
+
+                        card.innerHTML = `
+                            <div class="flex-grow">
+                                <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${processor.name}</h3>
+                                <p class="text-xs sm:text-sm text-slate-300">Converts: ${inputsHtml} &rarr; ${processor.outputAmountBase} ${outputResIcon} ${outputRes.name}</p>
+                                <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualProcessingTime, 1)}s | Cost: $${this.formatNumber(actualCostToProcess)}</p>
+                                
+                                ${processor.isActive ? `
+                                <div class="w-full bg-slate-600 rounded-full h-3 my-2 overflow-hidden animated-progress-bar">
+                                    <div class="bg-sky-500 h-3 rounded-full" style="width: ${progressPercent}%"></div>
+                                </div>
+                                <p class="text-xs text-center text-sky-300">Processing... (${this.formatNumber(Math.max(0, actualProcessingTime - processor.currentProgress), 1)}s left)</p>
+                                ` : `
+                                <button data-action="startProcessing" data-processorid="${procId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm ${processor.isActive ? 'opacity-50 cursor-not-allowed' : ''}" ${processor.isActive ? 'disabled' : ''}>
+                                    Process Batch
+                                </button>
+                                `}
+                            </div>
+                            <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-1.5">
+                                <p class="text-xs text-slate-200 mb-1">Speed Lvl: ${processor.speedLevel} | Efficiency Lvl: ${processor.efficiencyLevel}</p>
+                                <div class="flex space-x-2">
+                                    <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="speed" class="flex-1 text-xs bg-green-600 hover:bg-green-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Speed ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'speed'))})</button>
+                                    <button data-action="buyProcessorUpgrade" data-processorid="${procId}" data-upgradetype="efficiency" class="flex-1 text-xs bg-teal-600 hover:bg-teal-500 text-white py-1.5 px-2 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all">Efficiency ($${this.formatNumber(this.getProcessorUpgradeCost(processor, 'efficiency'))})</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                // Remove elements that no longer exist in state
+                Array.from(processorsContainer.children).forEach(child => {
+                    const id = child.id.replace('processor-card-', '');
+                    if (!this.state.processors[id]) {
+                        processorsContainer.removeChild(child);
+                    }
+                });
+            },
+
+            renderMarket() {
                 const marketContainer = document.getElementById('market-container');
-                if (marketContainer) {
-                    marketContainer.innerHTML = '';
-                    Object.values(this.state.resources).filter(res => res.unlocked && res.value > 0).sort((a,b) => a.name.localeCompare(b.name)).forEach(res => {
-                        const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
+                if (!marketContainer) return;
+
+                const heavenlyBonusMultiplier = 1 + (this.state.prestige.upgrades.heavenlyBonus.level * this.state.prestige.upgrades.heavenlyBonus.effectPerLevel);
+                const currentMarketItemIds = new Set();
+
+                Object.values(this.state.resources)
+                    .filter(res => res.unlocked && res.value > 0)
+                    .sort((a,b) => a.name.localeCompare(b.name))
+                    .forEach(res => {
+                        currentMarketItemIds.add(res.id);
+                        let card = document.getElementById(`market-card-${res.id}`);
+
+                        if (!card) {
+                            card = document.createElement('div');
+                            card.id = `market-card-${res.id}`;
+                            card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect';
+                            marketContainer.appendChild(card);
+                        }
+
                         const currentPrice = res.value * this.state.globalUpgrades.sellMultiplier.value * heavenlyBonusMultiplier;
                         card.innerHTML = `
                             <div class="flex-grow">
                                 <h3 class="text-lg sm:text-xl font-semibold text-yellow-400 flex items-center"><span class="mr-2 text-xl">${res.icon || '❔'}</span>${res.name}</h3>
                                 <p class="text-sm text-slate-200">In Stock: ${this.formatNumber(res.count)}</p>
                                 <p class="text-xs text-slate-300 mb-2">Sell Price: $${this.formatNumber(currentPrice, 2)}/unit</p>
-                                <input type="number" id="sell-amount-${res.id}" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-md p-2 w-full mb-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty to sell" min="1" max="${Math.floor(res.count)}">
+                                <input type="number" id="sell-amount-${res.id}" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-md p-2 w-full mb-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty to sell" min="1" max="${Math.floor(res.count)}" value="${document.getElementById(`sell-amount-${res.id}`)?.value || ''}">
                             </div>
                             <div class="mt-auto space-y-1.5 pt-2">
                                 <div class="flex space-x-1">
@@ -1937,268 +2059,331 @@
                                 <button data-action="sellResource" data-resourceid="${res.id}" data-sellamount="${res.count}" class="w-full bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Sell All (${this.formatNumber(res.count)})</button>
                             </div>
                         `;
-                        marketContainer.appendChild(card);
                     });
-                }
+                
+                // Remove cards for resources no longer in the filtered list
+                Array.from(marketContainer.children).forEach(child => {
+                    const id = child.id.replace('market-card-', '');
+                    if (!this.state.resources[id] || !this.state.resources[id].unlocked || this.state.resources[id].value === 0) {
+                        marketContainer.removeChild(child);
+                    }
+                });
+            },
 
+            renderResearch() {
                 const researchContainer = document.getElementById('research-container');
-                if (researchContainer) {
-                    researchContainer.innerHTML = '';
-                    for (const researchId in this.state.research) {
-                        const item = this.state.research[researchId];
-                        const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
-                        
-                        let costHtml = `Cost: $${this.formatNumber(item.cost.money)}`;
-                        if (item.cost.resources) {
-                            for (const resKey in item.cost.resources) {
-                                costHtml += `, ${this.formatNumber(item.cost.resources[resKey])} ${this.state.resources[resKey]?.icon || ''} ${this.state.resources[resKey]?.name || resKey}`;
-                            }
-                        }
-                        
-                        let prerequisiteMet = true;
-                        let prerequisiteText = "";
-                        if (item.requiresResearch) {
-                            const prereq = this.state.research[item.requiresResearch];
-                            if (!prereq || !prereq.unlocked) {
-                                prerequisiteMet = false;
-                                prerequisiteText = `<p class="text-xs text-red-400 mt-1">Requires: ${prereq?.name || 'Previous Research'}</p>`;
-                            }
-                        }
-                        const actualResearchTime = this.getActualResearchTime(item);
-                        let buttonHtml = '';
-                        if (item.unlocked) {
-                            buttonHtml = '<p class="text-center text-green-400 font-semibold mt-2 py-1.5">Research Complete!</p>';
-                        } else if (item.isResearching) {
-                            const progressPercent = (item.currentProgress / actualResearchTime) * 100;
-                            buttonHtml = `
-                                <div class="w-full bg-slate-600 rounded-full h-4 my-2 overflow-hidden animated-progress-bar">
-                                    <div class="bg-sky-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: ${progressPercent}%">${Math.floor(progressPercent)}%</div>
-                                </div>
-                                <p class="text-xs text-center text-sky-300">Researching... (${this.formatNumber(actualResearchTime - item.currentProgress, 0)}s left)</p>
-                                <button data-action="cancelResearch" data-researchid="${researchId}" class="mt-2 w-full bg-red-600 hover:bg-red-500 text-white font-medium py-1.5 px-3 rounded-md shadow text-sm">Cancel Research</button>
-                            `;
-                        } else if (!prerequisiteMet) {
-                             buttonHtml = `<button class="mt-2 w-full bg-slate-500 text-slate-400 font-medium py-2 px-4 rounded-md text-sm cursor-not-allowed" disabled>Start Research</button>`;
-                        }
-                        else {
-                            buttonHtml = `<button data-action="startResearch" data-researchid="${researchId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Start Research</button>`;
-                        }
+                if (!researchContainer) return;
+                
+                const currentResearchIds = new Set();
 
-                        card.innerHTML = `
-                            <div class="flex-grow">
-                                <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${item.name}</h3>
-                                <p class="text-xs sm:text-sm text-slate-300 my-1">${item.description}</p>
-                                <p class="text-xs sm:text-sm text-slate-400">${costHtml}</p>
-                                <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualResearchTime,1)}s</p>
-                                ${prerequisiteText}
-                            </div>
-                            <div class="mt-auto pt-2 sm:pt-3">
-                                ${buttonHtml}
-                            </div>
-                        `;
+                for (const researchId in this.state.research) {
+                    const item = this.state.research[researchId];
+                    currentResearchIds.add(researchId);
+                    let card = document.getElementById(`research-card-${researchId}`);
+
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = `research-card-${researchId}`;
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect';
                         researchContainer.appendChild(card);
                     }
-                }
-
-
-                const achievementsContainer = document.getElementById('achievements-container');
-                if (achievementsContainer) {
-                    achievementsContainer.innerHTML = '';
-                    const categories = {};
-                    Object.entries(this.achievementsList).forEach(([id, achDef]) => {
-                        if (!achDef || !achDef.category) return; 
-                        if (!categories[achDef.category]) categories[achDef.category] = [];
-                        categories[achDef.category].push({id, ...achDef, outputResourceId: achDef.outputResourceId}); 
-                    });
-
-                    for (const categoryName in categories) {
-                        const categoryDiv = document.createElement('div');
-                        categoryDiv.className = 'mb-6 sm:mb-8'; 
-                        categoryDiv.innerHTML = `<h3 class="text-xl sm:text-2xl font-semibold text-sky-300 mb-3 sm:mb-4 border-b-2 border-sky-700 pb-2">${categoryName}</h3>`; 
-                        const gridDiv = document.createElement('div');
-                        gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4';
-                        
-                        categories[categoryName].sort((a,b) => { 
-                            const aUnlocked = this.state.achievements[a.id]?.unlocked;
-                            const bUnlocked = this.state.achievements[b.id]?.unlocked;
-                            if (aUnlocked && !bUnlocked) return -1;
-                            if (!aUnlocked && bUnlocked) return 1;
-                            return a.name.localeCompare(b.name); 
-                        }).forEach(ach => {
-                            const achState = this.state.achievements[ach.id];
-                            const card = document.createElement('div');
-                            card.className = `p-3 sm:p-4 rounded-lg shadow-xl flex flex-col transition-all duration-200 ${achState?.unlocked ? 'bg-green-600/90 border-2 border-green-400 transform scale-105' : 'bg-slate-700/80 backdrop-blur-sm opacity-90'}`; 
-                            card.innerHTML = `
-                                <div class="flex-grow">
-                                    <h4 class="text-base sm:text-lg font-semibold ${achState?.unlocked ? 'text-yellow-200' : 'text-yellow-400'}">${ach.name}</h4>
-                                    <p class="text-xs sm:text-sm mt-1 ${achState?.unlocked ? 'text-green-100' : 'text-slate-300'}">${ach.description}</p>
-                                </div>
-                                ${achState?.unlocked && achState.unlockedAt ? `<p class="text-xs italic mt-2 pt-2 border-t border-green-500 ${achState?.unlocked ? 'text-green-200' : 'text-slate-500'}">Unlocked: ${new Date(achState.unlockedAt).toLocaleDateString()}</p>` : ''}
-                            `;
-                            gridDiv.appendChild(card);
-                        });
-                        categoryDiv.appendChild(gridDiv);
-                        achievementsContainer.appendChild(categoryDiv);
+                    
+                    let costHtml = `Cost: $${this.formatNumber(item.cost.money)}`;
+                    if (item.cost.resources) {
+                        for (const resKey in item.cost.resources) {
+                            costHtml += `, ${this.formatNumber(item.cost.resources[resKey])} ${this.state.resources[resKey]?.icon || ''} ${this.state.resources[resKey]?.name || resKey}`;
+                        }
                     }
+                    
+                    let prerequisiteMet = true;
+                    let prerequisiteText = "";
+                    if (item.requiresResearch) {
+                        const prereq = this.state.research[item.requiresResearch];
+                        if (!prereq || !prereq.unlocked) {
+                            prerequisiteMet = false;
+                            prerequisiteText = `<p class="text-xs text-red-400 mt-1">Requires: ${prereq?.name || 'Previous Research'}</p>`;
+                        }
+                    }
+                    const actualResearchTime = this.getActualResearchTime(item);
+                    let buttonHtml = '';
+                    if (item.unlocked) {
+                        buttonHtml = '<p class="text-center text-green-400 font-semibold mt-2 py-1.5">Research Complete!</p>';
+                    } else if (item.isResearching) {
+                        const progressPercent = (item.currentProgress / actualResearchTime) * 100;
+                        buttonHtml = `
+                            <div class="w-full bg-slate-600 rounded-full h-4 my-2 overflow-hidden animated-progress-bar">
+                                <div class="bg-sky-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: ${progressPercent}%">${Math.floor(progressPercent)}%</div>
+                            </div>
+                            <p class="text-xs text-center text-sky-300">Researching... (${this.formatNumber(actualResearchTime - item.currentProgress, 0)}s left)</p>
+                            <button data-action="cancelResearch" data-researchid="${researchId}" class="mt-2 w-full bg-red-600 hover:bg-red-500 text-white font-medium py-1.5 px-3 rounded-md shadow text-sm">Cancel Research</button>
+                        `;
+                    } else if (!prerequisiteMet) {
+                            buttonHtml = `<button class="mt-2 w-full bg-slate-500 text-slate-400 font-medium py-2 px-4 rounded-md text-sm cursor-not-allowed" disabled>Start Research</button>`;
+                    }
+                    else {
+                        buttonHtml = `<button data-action="startResearch" data-researchid="${researchId}" class="mt-2 w-full bg-sky-600 hover:bg-sky-500 text-white font-medium py-2 px-4 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-sm">Start Research</button>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${item.name}</h3>
+                            <p class="text-xs sm:text-sm text-slate-300 my-1">${item.description}</p>
+                            <p class="text-xs sm:text-sm text-slate-400">${costHtml}</p>
+                            <p class="text-xs sm:text-sm text-slate-400">Time: ${this.formatNumber(actualResearchTime,1)}s</p>
+                            ${prerequisiteText}
+                        </div>
+                        <div class="mt-auto pt-2 sm:pt-3">
+                            ${buttonHtml}
+                        </div>
+                    `;
                 }
+                // Remove research cards that might have been removed (though unlikely in this game)
+                Array.from(researchContainer.children).forEach(child => {
+                    const id = child.id.replace('research-card-', '');
+                    if (!this.state.research[id]) {
+                        researchContainer.removeChild(child);
+                    }
+                });
+            },
 
-                const investmentsContainer = document.getElementById('investments-container');
-                if (investmentsContainer) {
-                    investmentsContainer.innerHTML = '';
-                    let totalPortfolioValue = 0;
-                    for (const assetId in this.investableAssets) {
-                        const assetDef = this.investableAssets[assetId];
-                        const marketData = this.state.investments.market[assetId];
-                        const portfolioData = this.state.investments.portfolio[assetId];
-                        if (!assetDef || !marketData || !portfolioData) continue; 
+            renderAchievements() {
+                const achievementsContainer = document.getElementById('achievements-container');
+                if (!achievementsContainer) return;
 
-                        const currentAssetValue = marketData.currentPrice * portfolioData.shares;
-                        totalPortfolioValue += currentAssetValue;
+                // Only rebuild categories if they don't exist or if structure significantly changes.
+                // For optimal update, we target individual achievement cards.
+                // However, since categories are static, and achievements list might grow,
+                // re-rendering per category might be acceptable for this tab if it's not updated very frequently.
+                // For simplicity and correctness with sorting, we'll re-render categories here.
+                achievementsContainer.innerHTML = ''; // Clear for full re-render on this tab for sorting
 
+                const categories = {};
+                Object.entries(this.achievementsList).forEach(([id, achDef]) => {
+                    if (!achDef || !achDef.category) return; 
+                    if (!categories[achDef.category]) categories[achDef.category] = [];
+                    categories[achDef.category].push({id, ...achDef, outputResourceId: achDef.outputResourceId}); 
+                });
+
+                for (const categoryName in categories) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'mb-6 sm:mb-8'; 
+                    categoryDiv.innerHTML = `<h3 class="text-xl sm:text-2xl font-semibold text-sky-300 mb-3 sm:mb-4 border-b-2 border-sky-700 pb-2">${categoryName}</h3>`; 
+                    const gridDiv = document.createElement('div');
+                    gridDiv.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4';
+                    
+                    categories[categoryName].sort((a,b) => { 
+                        const aUnlocked = this.state.achievements[a.id]?.unlocked;
+                        const bUnlocked = this.state.achievements[b.id]?.unlocked;
+                        if (aUnlocked && !bUnlocked) return -1;
+                        if (!aUnlocked && bUnlocked) return 1;
+                        return a.name.localeCompare(b.name); 
+                    }).forEach(ach => {
+                        const achState = this.state.achievements[ach.id];
                         const card = document.createElement('div');
-                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150';
+                        card.id = `achievement-card-${ach.id}`; // Add ID for potential granular updates later
+                        card.className = `p-3 sm:p-4 rounded-lg shadow-xl flex flex-col transition-all duration-200 ${achState?.unlocked ? 'bg-green-600/90 border-2 border-green-400 transform scale-105' : 'bg-slate-700/80 backdrop-blur-sm opacity-90'}`; 
                         card.innerHTML = `
                             <div class="flex-grow">
-                                <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${assetDef.name}</h3>
-                                <p class="text-xl sm:text-2xl my-1 sm:my-2 text-white">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow || '&#8212;'}</p>
-                                <p class="text-xs sm:text-sm text-slate-300">Last: $${this.formatNumber(marketData.lastPrice, 2)}</p>
-                                <hr class="my-2 sm:my-3 border-slate-600">
-                                <p class="text-base sm:text-lg font-medium text-sky-300">Your Portfolio:</p>
-                                <p class="text-xs sm:text-sm text-slate-200">Shares: ${this.formatNumber(portfolioData.shares)}</p>
-                                <p class="text-xs sm:text-sm text-slate-200">Avg. Buy: $${this.formatNumber(portfolioData.avgBuyPrice, 2)}</p>
-                                <p class="text-xs sm:text-sm text-slate-200">Value: $${this.formatNumber(currentAssetValue, 2)}</p>
+                                <h4 class="text-base sm:text-lg font-semibold ${achState?.unlocked ? 'text-yellow-200' : 'text-yellow-400'}">${ach.name}</h4>
+                                <p class="text-xs sm:text-sm mt-1 ${achState?.unlocked ? 'text-green-100' : 'text-slate-300'}">${ach.description}</p>
                             </div>
-                            <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-2">
-                                <div class="flex space-x-2">
-                                    <input type="number" id="buy-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1">
-                                    <button data-action="buyShares" data-assetid="${assetId}" class="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Buy</button>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <input type="number" id="sell-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1">
-                                    <button data-action="sellShares" data-assetid="${assetId}" class="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Sell</button>
-                                </div>
-                            </div>
+                            ${achState?.unlocked && achState.unlockedAt ? `<p class="text-xs italic mt-2 pt-2 border-t border-green-500 ${achState?.unlocked ? 'text-green-200' : 'text-slate-500'}">Unlocked: ${new Date(achState.unlockedAt).toLocaleDateString()}</p>` : ''}
                         `;
+                        gridDiv.appendChild(card);
+                    });
+                    categoryDiv.appendChild(gridDiv);
+                    achievementsContainer.appendChild(categoryDiv);
+                }
+            },
+
+            renderInvestments() {
+                const investmentsContainer = document.getElementById('investments-container');
+                const portfolioSummary = document.getElementById('portfolio-summary');
+                if (!investmentsContainer || !portfolioSummary) return;
+
+                let totalPortfolioValue = 0;
+                const currentAssetCardIds = new Set();
+
+                for (const assetId in this.investableAssets) {
+                    const assetDef = this.investableAssets[assetId];
+                    const marketData = this.state.investments.market[assetId];
+                    const portfolioData = this.state.investments.portfolio[assetId];
+                    if (!assetDef || !marketData || !portfolioData) continue; 
+
+                    currentAssetCardIds.add(assetId);
+                    let card = document.getElementById(`investment-card-${assetId}`);
+
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = `investment-card-${assetId}`;
+                        card.className = 'bg-slate-700/80 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-lg flex flex-col hover:bg-slate-600/70 transition-colors duration-150 card-hover-effect';
                         investmentsContainer.appendChild(card);
                     }
-                    const portfolioSummary = document.getElementById('portfolio-summary');
-                    if (portfolioSummary) {
-                         const currentTotalPortfolioValue = Object.keys(this.state.investments.portfolio).reduce((sum, assetId) => {
-                            const p = this.state.investments.portfolio[assetId];
-                            const m = this.state.investments.market[assetId];
-                            if (p && m) {
-                                return sum + (p.shares * m.currentPrice);
-                            }
-                            return sum;
-                        }, 0);
 
-                        const totalCostOfCurrentShares = Object.values(this.state.investments.portfolio).reduce((sum,p) => sum + (p.shares * p.avgBuyPrice), 0);
-                        const unrealizedPL = currentTotalPortfolioValue - totalCostOfCurrentShares;
-                        const realizedPL = (this.state.investments.totalSoldValue || 0) - (this.state.investments.totalBoughtValue || 0);
+                    const currentAssetValue = marketData.currentPrice * portfolioData.shares;
+                    totalPortfolioValue += currentAssetValue;
 
-
-                        portfolioSummary.innerHTML = `
-                            <p class="text-base sm:text-lg">Total Portfolio Value: <span class="font-semibold text-sky-400">$${this.formatNumber(totalPortfolioValue, 2)}</span></p>
-                            <p class="text-xs sm:text-sm">Unrealized P/L: <span class="${unrealizedPL >= 0 ? 'text-green-400' : 'text-red-400'}">$${this.formatNumber(unrealizedPL, 2)}</span></p>
-                            <p class="text-xs sm:text-sm">Realized P/L: <span class="${realizedPL >= 0 ? 'text-green-400' : 'text-red-400'}">$${this.formatNumber(realizedPL, 2)}</span></p>
-                            <p class="text-xs text-slate-500 mt-1">Transaction Fee: ${this.state.investments.transactionFee * 100}% (applied on buy/sell)</p>
-                        `;
-                    }
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="text-lg sm:text-xl font-semibold text-yellow-400">${assetDef.name}</h3>
+                            <p class="text-xl sm:text-2xl my-1 sm:my-2 text-white">Price: $${this.formatNumber(marketData.currentPrice, 2)} ${marketData.trendArrow || '&#8212;'}</p>
+                            <p class="text-xs sm:text-sm text-slate-300">Last: $${this.formatNumber(marketData.lastPrice, 2)}</p>
+                            <hr class="my-2 sm:my-3 border-slate-600">
+                            <p class="text-base sm:text-lg font-medium text-sky-300">Your Portfolio:</p>
+                            <p class="text-xs sm:text-sm text-slate-200">Shares: ${this.formatNumber(portfolioData.shares)}</p>
+                            <p class="text-xs sm:text-sm text-slate-200">Avg. Buy: $${this.formatNumber(portfolioData.avgBuyPrice, 2)}</p>
+                            <p class="text-xs sm:text-sm text-slate-200">Value: $${this.formatNumber(currentAssetValue, 2)}</p>
+                        </div>
+                        <div class="mt-auto pt-2 sm:pt-3 border-t border-slate-600 space-y-2">
+                            <div class="flex space-x-2">
+                                <input type="number" id="buy-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1" value="${document.getElementById(`buy-${assetId}-amount`)?.value || ''}">
+                                <button data-action="buyShares" data-assetid="${assetId}" class="bg-green-600 hover:bg-green-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Buy</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <input type="number" id="sell-${assetId}-amount" class="bg-slate-800 border border-slate-600 text-white text-xs sm:text-sm rounded-md p-2 w-full focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400" placeholder="Qty" min="1" value="${document.getElementById(`sell-${assetId}-amount`)?.value || ''}">
+                                <button data-action="sellShares" data-assetid="${assetId}" class="bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-3 rounded-md shadow-md transform hover:scale-105 active:scale-95 transition-all text-xs sm:text-sm">Sell</button>
+                            </div>
+                        </div>
+                    `;
                 }
 
+                // Remove cards for assets no longer in the filtered list (if any were removed)
+                Array.from(investmentsContainer.children).forEach(child => {
+                    const id = child.id.replace('investment-card-', '');
+                    if (!this.investableAssets[id]) { // Assuming investableAssets is static
+                        investmentsContainer.removeChild(child);
+                    }
+                });
+
+                const currentTotalPortfolioValue = Object.keys(this.state.investments.portfolio).reduce((sum, assetId) => {
+                    const p = this.state.investments.portfolio[assetId];
+                    const m = this.state.investments.market[assetId];
+                    if (p && m) {
+                        return sum + (p.shares * m.currentPrice);
+                    }
+                    return sum;
+                }, 0);
+
+                const totalCostOfCurrentShares = Object.values(this.state.investments.portfolio).reduce((sum,p) => sum + (p.shares * p.avgBuyPrice), 0);
+                const unrealizedPL = currentTotalPortfolioValue - totalCostOfCurrentShares;
+                const realizedPL = (this.state.investments.totalSoldValue || 0) - (this.state.investments.totalBoughtValue || 0);
+
+                portfolioSummary.innerHTML = `
+                    <p class="text-base sm:text-lg">Total Portfolio Value: <span class="font-semibold text-sky-400">$${this.formatNumber(totalPortfolioValue, 2)}</span></p>
+                    <p class="text-xs sm:text-sm">Unrealized P/L: <span class="${unrealizedPL >= 0 ? 'text-green-400' : 'text-red-400'}">$${this.formatNumber(unrealizedPL, 2)}</span></p>
+                    <p class="text-xs sm:text-sm">Realized P/L: <span class="${realizedPL >= 0 ? 'text-green-400' : 'text-red-400'}">$${this.formatNumber(realizedPL, 2)}</span></p>
+                    <p class="text-xs text-slate-500 mt-1">Transaction Fee: ${this.state.investments.transactionFee * 100}% (applied on buy/sell)</p>
+                `;
+            },
+
+            renderPrestige() {
                 const prestigeTabContent = document.getElementById('prestige-tab-content');
-                if (prestigeTabContent) {
-                    const prestige = this.state.prestige;
-                    const totalMoneyEver = this.state.money + this.state.stats.totalMoneyFromPreviousPrestiges; 
-                    const ppToGain = this.calculatePrestigePointsToGain();
-                    const canPrestigeNow = this.canPrestige();
-                    let prestigeInfoHtml = `
-                        <p class="text-lg text-center mb-2">Prestige Points (PP): <span class="font-bold text-yellow-300">${this.formatNumber(prestige.points)}</span></p>
-                        <p class="text-sm text-center mb-1 text-slate-300">Total PP Earned: ${this.formatNumber(prestige.totalPointsEverEarned)}</p>
-                        <p class="text-sm text-center mb-4 text-slate-300">Prestiges Done: ${this.formatNumber(prestige.prestigesDone)}</p>
-                        <div class="text-center mb-6 p-4 bg-slate-800/50 rounded-lg">
-                            <p class="text-md mb-2 text-slate-100">On next Prestige, you will gain: <span class="font-bold text-xl ${ppToGain > 0 ? 'text-green-400' : 'text-slate-400'}">${this.formatNumber(ppToGain)} PP</span></p>
-                            <button data-action="performPrestige" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg text-lg transform hover:scale-105 active:scale-95 transition-all ${!canPrestigeNow ? 'opacity-50 cursor-not-allowed' : ''}" ${!canPrestigeNow ? 'disabled' : ''}>
-                                Perform Prestige
-                            </button>
-                            ${!canPrestigeNow && totalMoneyEver < prestige.minMoneyForPrestige ? `<p class="text-xs text-red-400 mt-1">Reach $${this.formatNumber(prestige.minMoneyForPrestige)} total earnings to unlock Prestige.</p>` : ''}
-                             ${!canPrestigeNow && totalMoneyEver >= prestige.minMoneyForPrestige && ppToGain === 0 ? `<p class="text-xs text-yellow-400 mt-1">Earn more to gain Prestige Points.</p>` : ''}
-                        </div>
-                        <h3 class="text-xl font-semibold text-sky-300 mb-4 text-center border-t border-slate-700 pt-4">Prestige Upgrades</h3>
-                        <div id="prestige-upgrades-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                if (!prestigeTabContent) return;
 
-                    for (const upgKey in prestige.upgrades) {
-                        const upgrade = prestige.upgrades[upgKey];
-                        const cost = this.getPrestigeUpgradeCost(upgKey);
-                        prestigeInfoHtml += `
-                            <div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-md hover:bg-slate-700/90 transition-colors duration-150">
-                                <h4 class="text-lg font-semibold text-yellow-400">${upgrade.name} <span class="text-sm text-slate-400">(Lvl ${upgrade.level})</span></h4>
-                                <p class="text-xs text-slate-300 my-1">${upgrade.description}</p>
-                                <p class="text-sm text-sky-300">Cost: ${this.formatNumber(cost)} PP</p>
-                                <button data-action="buyPrestigeUpgrade" data-upgradekey="${upgKey}" class="mt-2 w-full bg-green-600 hover:bg-green-500 text-white font-medium py-1.5 px-3 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all text-sm ${prestige.points < cost ? 'opacity-50 cursor-not-allowed' : ''}" ${prestige.points < cost ? 'disabled' : ''}>
-                                    Upgrade
-                                </button>
-                            </div>`;
-                    }
-                    prestigeInfoHtml += `</div>`;
-                    prestigeTabContent.innerHTML = prestigeInfoHtml;
-                }
-
-                const statsTabContent = document.getElementById('stats-tab-content');
-                if (statsTabContent && this.state.stats) {
-                    const stats = this.state.stats;
-                    let statsHtml = `<div class="space-y-4 text-slate-200">`;
-
-                    statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
-                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">General Stats</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <p>Total Manual Clicks: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalManualClicks)}</span></p>
-                            <p>Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.currentRunMoneyEarned, 2)}</span></p>
-                            <p>Highest Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.highestMoneyThisPrestige, 2)}</span></p>
-                            <p>All-Time Highest Money: <span class="font-medium text-amber-400">$${this.formatNumber(stats.allTimeHighestMoney, 2)}</span></p>
-                            <p>Total Time Played: <span class="font-medium text-yellow-300">${this.formatTime(stats.totalTimePlayedSeconds)}</span></p>
-                        </div>
-                    </div>`;
-                    
-                    let miningStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
-                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Mining Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
-                    let hasMinedStats = false;
-                    Object.keys(stats.totalResourcesMined || {}).sort((a,b) => (this.state.resources[a]?.name || a).localeCompare(this.state.resources[b]?.name || b)).forEach(resId => {
-                        if (this.state.resources[resId]) {
-                            miningStatsHtml += `<div>${this.state.resources[resId].icon || ''} ${this.state.resources[resId].name}: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalResourcesMined[resId] || 0)}</span></div>`;
-                            hasMinedStats = true;
-                        }
-                    });
-                    if (!hasMinedStats) miningStatsHtml += `<p class="col-span-full text-slate-400 italic">No resources mined yet.</p>`;
-                    miningStatsHtml += `</div></div>`;
-                    statsHtml += miningStatsHtml;
-
-                    let processingStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
-                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Processing Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
-                    let hasProcessedStats = false;
-                    Object.keys(stats.totalItemsProcessed || {}).sort((a,b) => (this.state.resources[a]?.name || a).localeCompare(this.state.resources[b]?.name || b)).forEach(resId => {
-                         if (this.state.resources[resId]) { 
-                            processingStatsHtml += `<div>${this.state.resources[resId].icon || ''} ${this.state.resources[resId].name}: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalItemsProcessed[resId] || 0)}</span></div>`;
-                            hasProcessedStats = true;
-                        }
-                    });
-                    if (!hasProcessedStats) processingStatsHtml += `<p class="col-span-full text-slate-400 italic">No items processed yet.</p>`;
-                    processingStatsHtml += `</div></div>`;
-                    statsHtml += processingStatsHtml;
-
-                    statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
-                        <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Prestige Stats</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                            <p>Total PP Earned: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.totalPointsEverEarned)}</span></p>
-                            <p>Prestiges Performed: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.prestigesDone)}</span></p>
-                        </div>
-                    </div>`;
-
-                    statsHtml += `</div>`;
-                    statsTabContent.innerHTML = statsHtml;
-                }
+                const prestige = this.state.prestige;
+                const totalMoneyEver = this.state.money + this.state.stats.totalMoneyFromPreviousPrestiges; 
+                const ppToGain = this.calculatePrestigePointsToGain();
+                const canPrestigeNow = this.canPrestige();
                 
+                let prestigeInfoHtml = `
+                    <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-purple-400 text-center">Prestige System</h2>
+                    <p class="text-lg text-center mb-2">Prestige Points (PP): <span class="font-bold text-yellow-300">${this.formatNumber(prestige.points)}</span></p>
+                    <p class="text-sm text-center mb-1 text-slate-300">Total PP Earned: ${this.formatNumber(prestige.totalPointsEverEarned)}</p>
+                    <p class="text-sm text-center mb-4 text-slate-300">Prestiges Done: ${this.formatNumber(prestige.prestigesDone)}</p>
+                    <div class="text-center mb-6 p-4 bg-slate-800/50 rounded-lg">
+                        <p class="text-md mb-2 text-slate-100">On next Prestige, you will gain: <span class="font-bold text-xl ${ppToGain > 0 ? 'text-green-400' : 'text-slate-400'}">${this.formatNumber(ppToGain)} PP</span></p>
+                        <button data-action="performPrestige" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-6 rounded-lg shadow-lg text-lg transform hover:scale-105 active:scale-95 transition-all ${!canPrestigeNow ? 'opacity-50 cursor-not-allowed' : ''}" ${!canPrestigeNow ? 'disabled' : ''}>
+                            Perform Prestige
+                        </button>
+                        ${!canPrestigeNow && totalMoneyEver < prestige.minMoneyForPrestige ? `<p class="text-xs text-red-400 mt-1">Reach $${this.formatNumber(prestige.minMoneyForPrestige)} total earnings to unlock Prestige.</p>` : ''}
+                            ${!canPrestigeNow && totalMoneyEver >= prestige.minMoneyForPrestige && ppToGain === 0 ? `<p class="text-xs text-yellow-400 mt-1">Earn more to gain Prestige Points.</p>` : ''}
+                    </div>
+                    <h3 class="text-xl font-semibold text-sky-300 mb-4 text-center border-t border-slate-700 pt-4">Prestige Upgrades</h3>
+                    <div id="prestige-upgrades-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+
+                for (const upgKey in prestige.upgrades) {
+                    const upgrade = prestige.upgrades[upgKey];
+                    const cost = this.getPrestigeUpgradeCost(upgKey);
+                    prestigeInfoHtml += `
+                        <div id="prestige-upgrade-card-${upgKey}" class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-md hover:bg-slate-700/90 transition-colors duration-150 card-hover-effect">
+                            <h4 class="text-lg font-semibold text-yellow-400">${upgrade.name} <span class="text-sm text-slate-400">(Lvl ${upgrade.level})</span></h4>
+                            <p class="text-xs text-slate-300 my-1">${upgrade.description}</p>
+                            <p class="text-sm text-sky-300">Cost: ${this.formatNumber(cost)} PP</p>
+                            <button data-action="buyPrestigeUpgrade" data-upgradekey="${upgKey}" class="mt-2 w-full bg-green-600 hover:bg-green-500 text-white font-medium py-1.5 px-3 rounded-md shadow transform hover:scale-105 active:scale-95 transition-all text-sm ${prestige.points < cost ? 'opacity-50 cursor-not-allowed' : ''}" ${prestige.points < cost ? 'disabled' : ''}>
+                                Upgrade
+                            </button>
+                        </div>`;
+                }
+                prestigeInfoHtml += `</div>`;
+                prestigeTabContent.innerHTML = prestigeInfoHtml; // Full re-render on this tab for simplicity
+            },
+
+            renderStats() {
+                const statsTabContent = document.getElementById('stats-tab-content');
+                if (!statsTabContent || !this.state.stats) return;
+
+                const stats = this.state.stats;
+                let statsHtml = `
+                    <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-teal-400 text-center">Game Statistics</h2>
+                    <div class="space-y-4 text-slate-200">`;
+
+                statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                    <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">General Stats</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <p>Total Manual Clicks: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalManualClicks)}</span></p>
+                        <p>Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.currentRunMoneyEarned, 2)}</span></p>
+                        <p>Highest Money This Prestige: <span class="font-medium text-green-400">$${this.formatNumber(stats.highestMoneyThisPrestige, 2)}</span></p>
+                        <p>All-Time Highest Money: <span class="font-medium text-amber-400">$${this.formatNumber(stats.allTimeHighestMoney, 2)}</span></p>
+                        <p>Total Time Played: <span class="font-medium text-yellow-300">${this.formatTime(stats.totalTimePlayedSeconds)}</span></p>
+                    </div>
+                </div>`;
+                
+                let miningStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                    <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Mining Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
+                let hasMinedStats = false;
+                Object.keys(stats.totalResourcesMined || {}).sort((a,b) => (this.state.resources[a]?.name || a).localeCompare(this.state.resources[b]?.name || b)).forEach(resId => {
+                    if (this.state.resources[resId]) {
+                        miningStatsHtml += `<div>${this.state.resources[resId].icon || ''} ${this.state.resources[resId].name}: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalResourcesMined[resId] || 0)}</span></div>`;
+                        hasMinedStats = true;
+                    }
+                });
+                if (!hasMinedStats) miningStatsHtml += `<p class="col-span-full text-slate-400 italic">No resources mined yet.</p>`;
+                miningStatsHtml += `</div></div>`;
+                statsHtml += miningStatsHtml;
+
+                let processingStatsHtml = `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                    <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Processing Totals</h3><div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">`;
+                let hasProcessedStats = false;
+                Object.keys(stats.totalItemsProcessed || {}).sort((a,b) => (this.state.resources[a]?.name || a).localeCompare(this.state.resources[b]?.name || b)).forEach(resId => {
+                        if (this.state.resources[resId]) { 
+                        processingStatsHtml += `<div>${this.state.resources[resId].icon || ''} ${this.state.resources[resId].name}: <span class="font-medium text-yellow-300">${this.formatNumber(stats.totalItemsProcessed[resId] || 0)}</span></div>`;
+                        hasProcessedStats = true;
+                    }
+                });
+                if (!hasProcessedStats) processingStatsHtml += `<p class="col-span-full text-slate-400 italic">No items processed yet.</p>`;
+                processingStatsHtml += `</div></div>`;
+                statsHtml += processingStatsHtml;
+
+                statsHtml += `<div class="bg-slate-800/70 backdrop-blur-sm p-4 rounded-lg shadow-xl">
+                    <h3 class="text-xl font-semibold text-teal-400 mb-3 border-b border-teal-700 pb-2">Prestige Stats</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                        <p>Total PP Earned: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.totalPointsEverEarned)}</span></p>
+                        <p>Prestiges Performed: <span class="font-medium text-purple-400">${this.formatNumber(this.state.prestige.prestigesDone)}</span></p>
+                    </div>
+                </div>`;
+
+                statsHtml += `</div>`;
+                statsTabContent.innerHTML = statsHtml; // Full re-render of stats tab is acceptable here
+            },
+
+            renderSettings() {
+                const userIdDisplaySettings = document.getElementById('user-id-display-settings');
+                if (userIdDisplaySettings) {
+                    userIdDisplaySettings.textContent = userId || 'N/A (Offline Mode)';
+                }
+            },
+
+            updateTabVisibility() {
                 document.getElementById('mines-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'mines');
                 document.getElementById('upgrades-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'upgrades');
                 document.getElementById('investments-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'investments');
@@ -2210,7 +2395,6 @@
                 document.getElementById('stats-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'stats');
                 document.getElementById('settings-tab-content')?.classList.toggle('hidden', this.state.currentTab !== 'settings');
 
-
                 document.querySelectorAll('button[data-tab]').forEach(tabButton => {
                     const isCurrentTab = tabButton.dataset.tab === this.state.currentTab;
                     tabButton.classList.toggle('bg-sky-600', isCurrentTab); 
@@ -2221,6 +2405,51 @@
                     tabButton.classList.toggle('hover:bg-sky-500', !isCurrentTab); 
                     tabButton.classList.toggle('hover:bg-sky-600', isCurrentTab); 
                 });
+            },
+
+            render() {
+                if (!document.body || !document.getElementById('money-display') || !this.state || !this.state.resources || !this.state.globalUpgrades || !this.state.achievements || !this.state.investments || !this.state.processors || !this.state.stats || !this.state.research || !this.state.prestige) {
+                    console.warn("Render called too early or critical elements/state missing. Deferring render.");
+                    requestAnimationFrame(() => this.render());
+                    return;
+                }
+
+                this.renderMoneyDisplay();
+                
+                // Only render active tab's content
+                switch (this.state.currentTab) {
+                    case 'mines':
+                        this.renderResources();
+                        break;
+                    case 'upgrades':
+                        this.renderGlobalUpgrades();
+                        break;
+                    case 'investments':
+                        this.renderInvestments();
+                        break;
+                    case 'achievements':
+                        this.renderAchievements();
+                        break;
+                    case 'process':
+                        this.renderProcessors();
+                        break;
+                    case 'market':
+                        this.renderMarket();
+                        break;
+                    case 'research':
+                        this.renderResearch();
+                        break;
+                    case 'prestige':
+                        this.renderPrestige();
+                        break;
+                    case 'stats':
+                        this.renderStats();
+                        break;
+                    case 'settings':
+                        this.renderSettings();
+                        break;
+                }
+                this.updateTabVisibility(); // Always update tab buttons and general tab visibility
             },
             
             createUnlockCardInnerHtml(item, itemType = 'resource') { 
@@ -2348,7 +2577,7 @@
             switchTab(tabId) {
                 if(tabId && this.state.currentTab !== tabId) { 
                     this.state.currentTab = tabId;
-                    this.render(); 
+                    this.render(); // Full render on tab switch to ensure all content is fresh
                 }
             },
 
@@ -2397,7 +2626,9 @@
 
                 for (let i = 0; i < tiers.length; i++) {
                     if (Math.abs(numFloat) >= tiers[i].value) {
-                        return (numFloat / tiers[i].value).toFixed(Math.max(precision, (tiers[i].symbol === "k" ? 1: 2) )) + tiers[i].symbol;
+                        // For 'k', default to 0 precision, otherwise use the passed precision or default to 2
+                        const effectivePrecision = tiers[i].symbol === "k" ? 0 : Math.max(precision, 2); 
+                        return (numFloat / tiers[i].value).toFixed(effectivePrecision) + tiers[i].symbol;
                     }
                 }
                 
@@ -2638,11 +2869,9 @@
         </div>
 
         <div id="prestige-tab-content" class="hidden">
-            <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-purple-400 text-center">Prestige System</h2>
             </div>
         
         <div id="stats-tab-content" class="hidden">
-            <h2 class="text-2xl sm:text-3xl font-semibold mb-4 sm:mb-6 text-teal-400 text-center">Game Statistics</h2>
             </div>
         
         <div id="settings-tab-content" class="hidden"> 
@@ -2658,7 +2887,7 @@
                 <div class="mb-6 pt-6 border-t border-slate-700">
                     <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Load Save File</h3>
                     <p class="text-xs sm:text-sm text-slate-300 mb-3">Load your game progress from a previously downloaded JSON file. This will overwrite your current game state in this browser session and attempt to sync with the cloud if logged in.</p>
-                    <input type="file" id="load-save-input" accept=".json" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500"/>
+                    <input type="file" id="load-save-input" accept=".json" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-600 file:text-white hover:file:bg-sky-500 cursor:pointer focus:outline-none focus:ring-2 focus:ring-sky-500"/>
                 </div>
                 <div class="mb-6 pt-6 border-t border-slate-700">
                     <h3 class="text-lg sm:text-xl font-medium text-yellow-400 mb-2">Reset Game</h3>
