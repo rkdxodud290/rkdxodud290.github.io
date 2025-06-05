@@ -1,4 +1,4 @@
-this is a collection of mini games that i made with myself
+this is a collection of mini games that made by me
 
 gem catcher (all) : https://rkdxodud290.github.io/gem_catcher_all.html
 
