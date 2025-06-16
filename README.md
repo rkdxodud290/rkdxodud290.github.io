@@ -14,3 +14,5 @@
 1.테트리스 https://rkdxodud290.github.io/index.html
 
 2.감옥탈출 리마스터 https://tyk.free.nf/1/index.html
+
+3.검 강화하기 https://tyk.free.nf/2
