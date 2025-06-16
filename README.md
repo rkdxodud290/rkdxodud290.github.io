@@ -12,3 +12,5 @@
 게임 목록 및 링크 (해당 링크는 학교어서도 접속 가능합니다.)
 
 1.테트리스 https://rkdxodud290.github.io/index.html
+
+2.감옥탈출 리마스터 https://tyk.free.nf/1/index.html
